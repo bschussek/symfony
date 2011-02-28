@@ -11,10 +11,10 @@
 
 namespace Symfony\Tests\Component\Form;
 
+require_once __DIR__ . '/TestCase.php';
 require_once __DIR__ . '/Fixtures/Author.php';
-require_once __DIR__ . '/Fixtures/TestField.php';
 require_once __DIR__ . '/Fixtures/InvalidField.php';
-require_once __DIR__ . '/Fixtures/RequiredOptionsField.php';
+require_once __DIR__ . '/Fixtures/FixedValueTransformer.php';
 
 use Symfony\Component\Form\ValueTransformer\ValueTransformerInterface;
 use Symfony\Component\Form\PropertyPath;
@@ -22,73 +22,74 @@ use Symfony\Component\Form\FieldError;
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\ValueTransformer\TransformationFailedException;
 use Symfony\Tests\Component\Form\Fixtures\Author;
-use Symfony\Tests\Component\Form\Fixtures\TestField;
 use Symfony\Tests\Component\Form\Fixtures\InvalidField;
-use Symfony\Tests\Component\Form\Fixtures\RequiredOptionsField;
+use Symfony\Tests\Component\Form\Fixtures\FixedValueTransformer;
 
-class FieldTest extends \PHPUnit_Framework_TestCase
+class FieldTest extends TestCase
 {
     protected $field;
 
     protected function setUp()
     {
-        $this->field = new TestField('title');
+        parent::setUp();
+
+        $this->field = $this->factory->getField('title');
     }
 
     public function testGetPropertyPath_defaultPath()
     {
-        $field = new TestField('title');
+        $field = $this->factory->getField('title');
 
         $this->assertEquals(new PropertyPath('title'), $field->getPropertyPath());
     }
 
     public function testGetPropertyPath_pathIsZero()
     {
-        $field = new TestField('title', array('property_path' => '0'));
+        $field = $this->factory->getField('title', array('property_path' => '0'));
 
         $this->assertEquals(new PropertyPath('0'), $field->getPropertyPath());
     }
 
     public function testGetPropertyPath_pathIsEmpty()
     {
-        $field = new TestField('title', array('property_path' => ''));
+        $field = $this->factory->getField('title', array('property_path' => ''));
 
         $this->assertEquals(null, $field->getPropertyPath());
     }
 
     public function testGetPropertyPath_pathIsNull()
     {
-        $field = new TestField('title', array('property_path' => null));
+        $field = $this->factory->getField('title', array('property_path' => null));
 
         $this->assertEquals(null, $field->getPropertyPath());
     }
 
     public function testPassRequiredAsOption()
     {
-        $field = new TestField('title', array('required' => false));
+        $field = $this->factory->getField('title', array('required' => false));
 
         $this->assertFalse($field->isRequired());
 
-        $field = new TestField('title', array('required' => true));
+        $field = $this->factory->getField('title', array('required' => true));
 
         $this->assertTrue($field->isRequired());
     }
 
     public function testPassDisabledAsOption()
     {
-        $field = new TestField('title', array('disabled' => false));
+        $field = $this->factory->getField('title', array('disabled' => false));
 
         $this->assertFalse($field->isDisabled());
 
-        $field = new TestField('title', array('disabled' => true));
+        $field = $this->factory->getField('title', array('disabled' => true));
 
         $this->assertTrue($field->isDisabled());
     }
 
     public function testFieldIsDisabledIfParentIsDisabled()
     {
-        $field = new TestField('title', array('disabled' => false));
-        $field->setParent(new TestField('title', array('disabled' => true)));
+        $field = $this->factory->getField('title', array('disabled' => false));
+        $field->setParent($this->factory->getField('title', array('disabled' => true)));
 
         $this->assertTrue($field->isDisabled());
     }
@@ -119,30 +120,6 @@ class FieldTest extends \PHPUnit_Framework_TestCase
     public function testUnsubmittedFieldIsInvalid()
     {
         $this->assertFalse($this->field->isValid());
-    }
-
-    public function testGetNameReturnsKey()
-    {
-        $this->assertEquals('title', $this->field->getName());
-    }
-
-    public function testGetNameIncludesParent()
-    {
-        $this->field->setParent($this->createMockGroupWithName('news[article]'));
-
-        $this->assertEquals('news[article][title]', $this->field->getName());
-    }
-
-    public function testGetIdReturnsKey()
-    {
-        $this->assertEquals('title', $this->field->getId());
-    }
-
-    public function testGetIdIncludesParent()
-    {
-        $this->field->setParent($this->createMockGroupWithId('news_article'));
-
-        $this->assertEquals('news_article_title', $this->field->getId());
     }
 
     public function testIsRequiredReturnsOwnValueIfNoParent()
@@ -183,20 +160,6 @@ class FieldTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($this->field->isRequired());
     }
 
-    public function testExceptionIfUnknownOption()
-    {
-        $this->setExpectedException('Symfony\Component\Form\Exception\InvalidOptionsException');
-
-        new RequiredOptionsField('name', array('bar' => 'baz', 'moo' => 'maa'));
-    }
-
-    public function testExceptionIfMissingOption()
-    {
-        $this->setExpectedException('Symfony\Component\Form\Exception\MissingOptionsException');
-
-        new RequiredOptionsField('name');
-    }
-
     public function testIsSubmitted()
     {
         $this->assertFalse($this->field->isSubmitted());
@@ -206,7 +169,7 @@ class FieldTest extends \PHPUnit_Framework_TestCase
 
     public function testDefaultValuesAreTransformedCorrectly()
     {
-        $field = new TestField('name');
+        $field = $this->factory->getField('name');
 
         $this->assertEquals(null, $this->field->getData());
         $this->assertEquals('', $this->field->getDisplayedData());
@@ -224,7 +187,11 @@ class FieldTest extends \PHPUnit_Framework_TestCase
     {
         $this->field->setData(123);
 
-        $this->assertSame(123, $this->field->getData());
+        // The values are synchronized
+        // Without value transformer, the field can't know that the data
+        // should be casted to an integer when the field is bound
+        // Even without binding, the data will thus be a string
+        $this->assertSame('123', $this->field->getData());
         $this->assertSame('123', $this->field->getDisplayedData());
     }
 
@@ -234,13 +201,12 @@ class FieldTest extends \PHPUnit_Framework_TestCase
         $normTransformer = $this->createMockTransformer();
 
         $field = $this->getMock(
-            'Symfony\Tests\Component\Form\Fixtures\TestField',
+            'Symfony\Component\Form\Field',
             array('processData'), // only mock processData()
-            array('title', array(
-                'value_transformer' => $valueTransformer,
-                'normalization_transformer' => $normTransformer,
-            ))
+            array('title')
         );
+        $field->setValueTransformer($valueTransformer);
+        $field->setNormalizationTransformer($normTransformer);
 
         // 1a. The value is converted to a string and passed to the value transformer
         $valueTransformer->expects($this->once())
@@ -281,12 +247,11 @@ class FieldTest extends \PHPUnit_Framework_TestCase
         $transformer = $this->createMockTransformer();
 
         $field = $this->getMock(
-            'Symfony\Tests\Component\Form\Fixtures\TestField',
+            'Symfony\Component\Form\Field',
             array('processData'), // only mock processData()
-            array('title', array(
-                'value_transformer' => $transformer,
-            ))
+            array('title')
         );
+        $field->setValueTransformer($transformer);
 
         // 1. Empty values are converted to NULL by convention
         $transformer->expects($this->once())
@@ -316,7 +281,7 @@ class FieldTest extends \PHPUnit_Framework_TestCase
     {
         $transformer = $this->createMockTransformer();
 
-        $field = new TestField('title', array(
+        $field = $this->factory->getField('title', array(
             'value_transformer' => $transformer,
         ));
 
@@ -349,23 +314,17 @@ class FieldTest extends \PHPUnit_Framework_TestCase
 
     public function testValuesAreTransformedCorrectly()
     {
-        // The value is first passed to the normalization transformer...
-        $normTransformer = $this->createMockTransformer();
-        $normTransformer->expects($this->exactly(2))
-                                ->method('transform')
-                                // Impossible to test with PHPUnit because called twice
-                                // ->with($this->identicalTo(0))
-                                ->will($this->returnValue('norm[0]'));
+        $normTransformer = new FixedValueTransformer(array(
+            null => '',
+            0 => 'norm[0]',
+        ));
 
-        // ...and then to the value transformer
-        $valueTransformer = $this->createMockTransformer();
-        $valueTransformer->expects($this->exactly(2))
-                                ->method('transform')
-                                // Impossible to test with PHPUnit because called twice
-                                // ->with($this->identicalTo('norm[0]'))
-                                ->will($this->returnValue('transform[norm[0]]'));
+        $valueTransformer = new FixedValueTransformer(array(
+            '' => '',
+            'norm[0]' => 'transform[norm[0]]',
+        ));
 
-        $field = new TestField('title', array(
+        $field = $this->factory->getField('title', array(
             'value_transformer' => $valueTransformer,
             'normalization_transformer' => $normTransformer,
         ));
@@ -379,20 +338,12 @@ class FieldTest extends \PHPUnit_Framework_TestCase
 
     public function testSubmittedValuesAreTrimmedBeforeTransforming()
     {
-        // The value is passed to the value transformer
-        $transformer = $this->createMockTransformer();
-        $transformer->expects($this->once())
-                                ->method('reverseTransform')
-                                ->with($this->identicalTo('a'))
-                                ->will($this->returnValue('reverse[a]'));
+        $transformer = new FixedValueTransformer(array(
+            null => '',
+            'reverse[a]' => 'a',
+        ));
 
-        $transformer->expects($this->exactly(2))
-                                ->method('transform')
-                                // Impossible to test with PHPUnit because called twice
-                                // ->with($this->identicalTo('reverse[a]'))
-                                ->will($this->returnValue('a'));
-
-        $field = new TestField('title', array(
+        $field = $this->factory->getField('title', array(
             'value_transformer' => $transformer,
         ));
 
@@ -404,20 +355,12 @@ class FieldTest extends \PHPUnit_Framework_TestCase
 
     public function testSubmittedValuesAreNotTrimmedBeforeTransformingIfDisabled()
     {
-        // The value is passed to the value transformer
-        $transformer = $this->createMockTransformer();
-        $transformer->expects($this->once())
-                                ->method('reverseTransform')
-                                ->with($this->identicalTo(' a '))
-                                ->will($this->returnValue('reverse[ a ]'));
+        $transformer = new FixedValueTransformer(array(
+            null => '',
+            'reverse[ a ]' => ' a ',
+        ));
 
-        $transformer->expects($this->exactly(2))
-                                ->method('transform')
-                                // Impossible to test with PHPUnit because called twice
-                                // ->with($this->identicalTo('reverse[ a ]'))
-                                ->will($this->returnValue(' a '));
-
-        $field = new TestField('title', array(
+        $field = $this->factory->getField('title', array(
             'trim' => false,
             'value_transformer' => $transformer,
         ));
@@ -428,26 +371,11 @@ class FieldTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('reverse[ a ]', $field->getData());
     }
 
-    /*
-     * This is important so that submit() can work even if setData() was not called
-     * before
-     */
-    public function testWritePropertyTreatsEmptyValuesAsArrays()
-    {
-        $array = null;
-
-        $field = new TestField('firstName');
-        $field->submit('Bernhard');
-        $field->writeProperty($array);
-
-        $this->assertEquals(array('firstName' => 'Bernhard'), $array);
-    }
-
     public function testWritePropertyDoesNotWritePropertyIfPropertyPathIsEmpty()
     {
         $object = new Author();
 
-        $field = new TestField('firstName', array('property_path' => null));
+        $field = $this->factory->getField('firstName', array('property_path' => null));
         $field->submit('Bernhard');
         $field->writeProperty($object);
 
@@ -456,7 +384,7 @@ class FieldTest extends \PHPUnit_Framework_TestCase
 
     public function testIsTransformationSuccessfulReturnsTrueIfReverseTransformSucceeded()
     {
-        $field = new TestField('title', array(
+        $field = $this->factory->getField('title', array(
             'trim' => false,
         ));
 
@@ -470,14 +398,15 @@ class FieldTest extends \PHPUnit_Framework_TestCase
     {
         // The value is passed to the value transformer
         $transformer = $this->createMockTransformer();
-        $transformer->expects($this->once())
-                ->method('reverseTransform')
-                ->will($this->throwException(new TransformationFailedException()));
 
-        $field = new TestField('title', array(
+        $field = $this->factory->getField('title', array(
             'trim' => false,
             'value_transformer' => $transformer,
         ));
+
+        $transformer->expects($this->once())
+                ->method('reverseTransform')
+                ->will($this->throwException(new TransformationFailedException()));
 
         $field->submit('a');
 
@@ -502,7 +431,7 @@ class FieldTest extends \PHPUnit_Framework_TestCase
         $author = new Author();
         $author->firstName = 'Bernhard';
 
-        $field = new TestField('firstName', array(
+        $field = $this->factory->getField('firstName', array(
             'data' => 'foobar',
         ));
 

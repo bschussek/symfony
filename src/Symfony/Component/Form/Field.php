@@ -13,6 +13,9 @@ namespace Symfony\Component\Form;
 
 use Symfony\Component\Form\ValueTransformer\ValueTransformerInterface;
 use Symfony\Component\Form\ValueTransformer\TransformationFailedException;
+use Symfony\Component\Form\DataProcessor\DataProcessorInterface;
+use Symfony\Component\Form\Renderer\RendererInterface;
+use Symfony\Component\Form\Renderer\Plugin\PluginInterface;
 
 /**
  * Base class for form fields
@@ -50,53 +53,25 @@ class Field extends Configurable implements FieldInterface
 {
     private $errors = array();
     private $key = '';
-    private $parent = null;
+    private $parent;
     private $submitted = false;
-    private $required = null;
-    private $data = null;
-    private $normalizedData = null;
-    private $transformedData = null;
-    private $normalizationTransformer = null;
-    private $valueTransformer = null;
-    private $propertyPath = null;
+    private $required;
+    private $data;
+    private $normalizedData;
+    private $transformedData = '';
+    private $normalizationTransformer;
+    private $valueTransformer;
+    private $dataProcessor;
+    private $propertyPath;
     private $transformationSuccessful = true;
+    private $renderer;
+    private $hidden = false;
+    private $trim = true;
+    private $disabled = false;
 
-    public function __construct($key = null, array $options = array())
+    public function __construct($key = null)
     {
-        $this->addOption('data');
-        $this->addOption('trim', true);
-        $this->addOption('required', true);
-        $this->addOption('disabled', false);
-        $this->addOption('property_path', (string)$key);
-        $this->addOption('value_transformer');
-        $this->addOption('normalization_transformer');
-
         $this->key = (string)$key;
-
-        if (isset($options['data'])) {
-            // Populate the field with fixed data
-            // Set the property path to NULL so that the data is not
-            // overwritten by the form's data
-            $this->setData($options['data']);
-            $this->setPropertyPath(null);
-        }
-
-        parent::__construct($options);
-
-        if ($this->getOption('value_transformer')) {
-            $this->setValueTransformer($this->getOption('value_transformer'));
-        }
-
-        if ($this->getOption('normalization_transformer')) {
-            $this->setNormalizationTransformer($this->getOption('normalization_transformer'));
-        }
-
-        $this->normalizedData = $this->normalize($this->data);
-        $this->transformedData = $this->transform($this->normalizedData);
-
-        if (!$this->getOption('data')) {
-            $this->setPropertyPath($this->getOption('property_path'));
-        }
     }
 
     /**
@@ -124,7 +99,7 @@ class Field extends Configurable implements FieldInterface
      *
      * @return string
      */
-    protected function getTransformedData()
+    public function getTransformedData()
     {
         return $this->transformedData;
     }
@@ -135,6 +110,8 @@ class Field extends Configurable implements FieldInterface
     public function setPropertyPath($propertyPath)
     {
         $this->propertyPath = null === $propertyPath || '' === $propertyPath ? null : new PropertyPath($propertyPath);
+
+        return $this;
     }
 
     /**
@@ -164,25 +141,11 @@ class Field extends Configurable implements FieldInterface
     /**
      * {@inheritDoc}
      */
-    public function getName()
-    {
-        return null === $this->parent ? $this->key : $this->parent->getName().'['.$this->key.']';
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getId()
-    {
-        return null === $this->parent ? $this->key : $this->parent->getId().'_'.$this->key;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public function setRequired($required)
     {
         $this->required = $required;
+
+        return $this;
     }
 
     /**
@@ -190,15 +153,18 @@ class Field extends Configurable implements FieldInterface
      */
     public function isRequired()
     {
-        if (null === $this->required) {
-            $this->required = $this->getOption('required');
-        }
-
         if (null === $this->parent || $this->parent->isRequired()) {
             return $this->required;
         }
 
         return false;
+    }
+
+    public function setDisabled($disabled)
+    {
+        $this->disabled = $disabled;
+
+        return $this;
     }
 
     /**
@@ -207,8 +173,9 @@ class Field extends Configurable implements FieldInterface
     public function isDisabled()
     {
         if (null === $this->parent || !$this->parent->isDisabled()) {
-            return $this->getOption('disabled');
+            return $this->disabled;
         }
+
         return true;
     }
 
@@ -220,6 +187,13 @@ class Field extends Configurable implements FieldInterface
         return false;
     }
 
+    public function setHidden($hidden)
+    {
+        $this->hidden = $hidden;
+
+        return $this;
+    }
+
     /**
      * Returns true if the widget is hidden.
      *
@@ -227,7 +201,7 @@ class Field extends Configurable implements FieldInterface
      */
     public function isHidden()
     {
-        return false;
+        return $this->hidden;
     }
 
     /**
@@ -236,6 +210,8 @@ class Field extends Configurable implements FieldInterface
     public function setParent(FieldInterface $parent = null)
     {
         $this->parent = $parent;
+
+        return $this;
     }
 
     /**
@@ -285,9 +261,17 @@ class Field extends Configurable implements FieldInterface
      */
     public function setData($data)
     {
+        // All four transformation methods must be executed to make sure
+        // that all three data representations are synchronized
+        // Store data in between steps because processData() might use
+        // this data
         $this->data = $data;
         $this->normalizedData = $this->normalize($data);
-        $this->transformedData = $this->transform($this->normalizedData);
+        $this->transformedData = $this->transform($this->normalize($data));
+        $this->normalizedData = $this->processData($this->reverseTransform($this->transformedData));
+        $this->data = $this->denormalize($this->normalizedData);
+
+        return $this;
     }
 
     /**
@@ -301,7 +285,7 @@ class Field extends Configurable implements FieldInterface
         $this->submitted = true;
         $this->errors = array();
 
-        if (is_string($this->transformedData) && $this->getOption('trim')) {
+        if (is_string($this->transformedData) && $this->trim) {
             $this->transformedData = trim($this->transformedData);
         }
 
@@ -328,6 +312,10 @@ class Field extends Configurable implements FieldInterface
      */
     protected function processData($data)
     {
+        if ($this->dataProcessor) {
+            return $this->dataProcessor->processData($data);
+        }
+
         return $data;
     }
 
@@ -348,7 +336,7 @@ class Field extends Configurable implements FieldInterface
      *                When the field is submitted, the normalized submitted data is
      *                returned if the field is valid, null otherwise.
      */
-    protected function getNormalizedData()
+    public function getNormalizedData()
     {
         return $this->normalizedData;
     }
@@ -422,9 +410,11 @@ class Field extends Configurable implements FieldInterface
      *
      * @param ValueTransformerInterface $valueTransformer
      */
-    protected function setNormalizationTransformer(ValueTransformerInterface $normalizationTransformer)
+    public function setNormalizationTransformer(ValueTransformerInterface $normalizationTransformer = null)
     {
         $this->normalizationTransformer = $normalizationTransformer;
+
+        return $this;
     }
 
     /**
@@ -432,7 +422,7 @@ class Field extends Configurable implements FieldInterface
      *
      * @return ValueTransformerInterface
      */
-    protected function getNormalizationTransformer()
+    public function getNormalizationTransformer()
     {
         return $this->normalizationTransformer;
     }
@@ -442,9 +432,11 @@ class Field extends Configurable implements FieldInterface
      *
      * @param ValueTransformerInterface $valueTransformer
      */
-    protected function setValueTransformer(ValueTransformerInterface $valueTransformer)
+    public function setValueTransformer(ValueTransformerInterface $valueTransformer = null)
     {
         $this->valueTransformer = $valueTransformer;
+
+        return $this;
     }
 
     /**
@@ -452,9 +444,79 @@ class Field extends Configurable implements FieldInterface
      *
      * @return ValueTransformerInterface
      */
-    protected function getValueTransformer()
+    public function getValueTransformer()
     {
         return $this->valueTransformer;
+    }
+
+    /**
+     * Sets the data processor
+     *
+     * @param DataProcessorInterface $dataProcessor
+     */
+    public function setDataProcessor(DataProcessorInterface $dataProcessor = null)
+    {
+        $this->dataProcessor = $dataProcessor;
+
+        return $this;
+    }
+
+    /**
+     * Returns the data processor
+     *
+     * @return DataProcessorInterface
+     */
+    public function getDataProcessor()
+    {
+        return $this->dataProcessor;
+    }
+
+    public function setTrim($trim)
+    {
+        $this->trim = $trim;
+
+        return $this;
+    }
+
+    public function getTrim()
+    {
+        return $this->trim;
+    }
+
+    /**
+     * Sets the renderer
+     *
+     * @param RendererInterface $renderer
+     */
+    public function setRenderer(RendererInterface $renderer)
+    {
+        $this->renderer = $renderer;
+
+        return $this;
+    }
+
+    /**
+     * Returns the renderer
+     *
+     * @return RendererInterface
+     */
+    public function getRenderer()
+    {
+        return $this->renderer;
+    }
+
+    public function addRendererPlugin(PluginInterface $plugin)
+    {
+        $this->renderer->addPlugin($plugin);
+
+        return $this;
+    }
+
+    public function setRendererVar($name, $value)
+    {
+        $this->renderer->setVar($name, $value);
+
+        return $this;
     }
 
     /**
