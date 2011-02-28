@@ -15,7 +15,7 @@ use Symfony\Component\Form\FieldInterface;
 use Symfony\Component\Form\Renderer\Theme\ThemeInterface;
 use Symfony\Component\Form\Renderer\Plugin\PluginInterface;
 
-class DefaultRenderer implements RendererInterface, \ArrayAccess
+class DefaultRenderer implements RendererInterface
 {
     private $field;
 
@@ -28,6 +28,8 @@ class DefaultRenderer implements RendererInterface, \ArrayAccess
     private $changes = array();
 
     private $initialized = false;
+
+    private $rendered = false;
 
     public function __construct(ThemeInterface $theme, $template)
     {
@@ -90,8 +92,20 @@ class DefaultRenderer implements RendererInterface, \ArrayAccess
         return $this->vars[$name];
     }
 
+    public function getVars()
+    {
+        return $this->vars;
+    }
+
+    public function isRendered()
+    {
+        return $this->rendered;
+    }
+
     public function getWidget(array $vars = array())
     {
+        $this->rendered = true;
+
         return $this->render('widget', $vars);
     }
 
@@ -105,9 +119,9 @@ class DefaultRenderer implements RendererInterface, \ArrayAccess
         return $this->render('row', $vars);
     }
 
-    public function getHidden(array $vars = array())
+    public function getRest(array $vars = array())
     {
-        return $this->render('hidden', $vars);
+        return $this->render('rest', $vars);
     }
 
     /**
@@ -133,25 +147,5 @@ class DefaultRenderer implements RendererInterface, \ArrayAccess
             $this->vars,
             $vars
         ));
-    }
-
-    public function offsetGet($name)
-    {
-        return $this->getVar($name);
-    }
-
-    public function offsetExists($name)
-    {
-        return $this->hasVar($name);
-    }
-
-    public function offsetSet($name, $value)
-    {
-        throw new \BadMethodCallException('Not supported');
-    }
-
-    public function offsetUnset($name)
-    {
-        throw new \BadMethodCallException('Not supported');
     }
 }

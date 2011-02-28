@@ -229,76 +229,6 @@ class Form extends Field implements \IteratorAggregate, FormInterface
     }
 
     /**
-     * Returns an array of visible fields from the current schema.
-     *
-     * @return array
-     */
-    public function getVisibleFields()
-    {
-        return $this->getFieldsByVisibility(false, false);
-    }
-
-    /**
-     * Returns an array of visible fields from the current schema.
-     *
-     * This variant of the method will recursively get all the
-     * fields from the nested forms or field groups
-     *
-     * @return array
-     */
-    public function getAllVisibleFields()
-    {
-        return $this->getFieldsByVisibility(false, true);
-    }
-
-    /**
-     * Returns an array of hidden fields from the current schema.
-     *
-     * @return array
-     */
-    public function getHiddenFields()
-    {
-        return $this->getFieldsByVisibility(true, false);
-    }
-
-    /**
-     * Returns an array of hidden fields from the current schema.
-     *
-     * This variant of the method will recursively get all the
-     * fields from the nested forms or field groups
-     *
-     * @return array
-     */
-    public function getAllHiddenFields()
-    {
-        return $this->getFieldsByVisibility(true, true);
-    }
-
-    /**
-     * Returns a filtered array of fields from the current schema.
-     *
-     * @param Boolean $hidden Whether to return hidden fields only or visible fields only
-     * @param Boolean $recursive Whether to recur through embedded schemas
-     *
-     * @return array
-     */
-    protected function getFieldsByVisibility($hidden, $recursive)
-    {
-        $fields = array();
-        $hidden = (Boolean)$hidden;
-
-        foreach ($this->fields as $field) {
-            if ($field instanceof Form && $recursive) {
-                $fields = array_merge($fields, $field->getFieldsByVisibility($hidden, $recursive));
-            } else if ($hidden === $field->isHidden()) {
-                $fields[] = $field;
-            }
-        }
-
-        return $fields;
-    }
-
-    /**
      * Initializes the field group with an object to operate on
      *
      * @see FieldInterface
@@ -530,7 +460,7 @@ class Form extends Field implements \IteratorAggregate, FormInterface
                     $pathIterator->next();
                 }
 
-                if ($this->has($pathIterator->current()) && !$this->get($pathIterator->current())->isHidden()) {
+                if ($this->has($pathIterator->current())) {
                     $this->get($pathIterator->current())->addError($error, $pathIterator);
 
                     return;
@@ -541,7 +471,7 @@ class Form extends Field implements \IteratorAggregate, FormInterface
 
                 foreach ($iterator as $field) {
                     if (null !== ($fieldPath = $field->getPropertyPath())) {
-                        if ($fieldPath->getElement(0) === $pathIterator->current() && !$field->isHidden()) {
+                        if ($fieldPath->getElement(0) === $pathIterator->current()) {
                             if ($pathIterator->hasNext()) {
                                 $pathIterator->next();
                             }
