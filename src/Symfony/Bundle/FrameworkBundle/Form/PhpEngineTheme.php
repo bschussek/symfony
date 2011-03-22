@@ -14,7 +14,7 @@ namespace Symfony\Bundle\FrameworkBundle\Form;
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\FieldInterface;
 use Symfony\Component\Form\Exception\FormException;
-use Symfony\Component\Form\Renderer\Theme\ThemeInterface;
+use Symfony\Component\Form\Renderer\Theme\FormThemeInterface;
 use Symfony\Component\Templating\PhpEngine;
 
 /**
@@ -24,7 +24,7 @@ use Symfony\Component\Templating\PhpEngine;
  *
  * @author Benjamin Eberlei <kontakt@beberlei.de>
  */
-class PhpEngineTheme implements ThemeInterface
+class PhpEngineTheme implements FormThemeInterface
 {
     /**
      * @var array
@@ -75,5 +75,14 @@ class PhpEngineTheme implements ThemeInterface
         self::$cache[$templateName] = $template;
 
         return $template;
+    }
+
+    public function attributes(array $attribs)
+    {
+        $html = '';
+        foreach ($attribs as $k => $v) {
+            $html .= $this->engine->escape($k) . '="' . $this->engine->escape($v) .'" ';
+        }
+        return $html;
     }
 }

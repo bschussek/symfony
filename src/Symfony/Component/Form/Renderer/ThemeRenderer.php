@@ -15,7 +15,7 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\Renderer\Theme\FormThemeInterface;
 use Symfony\Component\Form\Renderer\Plugin\FormRendererPluginInterface;
 
-class ThemeRenderer implements FormRendererInterface, \ArrayAccess
+class ThemeRenderer implements FormRendererInterface
 {
     private $form;
 
@@ -39,8 +39,6 @@ class ThemeRenderer implements FormRendererInterface, \ArrayAccess
      * @var bool
      */
     private $rendered = false;
-
-    private $children = array();
 
     public function __construct(FormThemeInterface $theme, $template)
     {
@@ -81,11 +79,6 @@ class ThemeRenderer implements FormRendererInterface, \ArrayAccess
         $this->form = $form;
     }
 
-    public function setChildren(array $renderers)
-    {
-        $this->children = $renderers;
-    }
-
     public function setTheme(FormThemeInterface $theme)
     {
         $this->theme = $theme;
@@ -111,6 +104,12 @@ class ThemeRenderer implements FormRendererInterface, \ArrayAccess
         }
     }
 
+    public function setAttribute($name, $value)
+    {
+        // handling through $this->changes not necessary
+        $this->vars['attr'][$name] = $value;
+    }
+
     public function hasVar($name)
     {
         return array_key_exists($name, $this->vars);
@@ -121,7 +120,10 @@ class ThemeRenderer implements FormRendererInterface, \ArrayAccess
         $this->initialize();
 
         // TODO exception handling
-        return $this->vars[$name];
+        if (isset($this->vars[$name])) {
+            return $this->vars[$name];
+        }
+        return null;
     }
 
     public function getVars()
@@ -186,25 +188,5 @@ class ThemeRenderer implements FormRendererInterface, \ArrayAccess
             $this->vars,
             $vars
         ));
-    }
-
-    public function offsetGet($name)
-    {
-        return $this->children[$name];
-    }
-
-    public function offsetExists($name)
-    {
-        return isset($this->children[$name]);
-    }
-
-    public function offsetSet($name, $value)
-    {
-        throw new \BadMethodCallException('Not supported');
-    }
-
-    public function offsetUnset($name)
-    {
-        throw new \BadMethodCallException('Not supported');
     }
 }

@@ -9,11 +9,12 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Form\Renderer\Theme;
+namespace Symfony\Bundle\TwigBundle\Form;
 
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\Exception\FormException;
+use Symfony\Component\Form\Renderer\Theme\FormThemeInterface;
 
 class TwigTheme implements FormThemeInterface
 {
