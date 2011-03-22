@@ -15,7 +15,7 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\Renderer\Theme\FormThemeInterface;
 use Symfony\Component\Form\Renderer\Plugin\FormRendererPluginInterface;
 
-class ThemeRenderer implements FormRendererInterface
+class ThemeRenderer implements FormRendererInterface, \ArrayAccess
 {
     private $form;
 
@@ -188,5 +188,28 @@ class ThemeRenderer implements FormRendererInterface
             $this->vars,
             $vars
         ));
+    }
+
+    public function offsetExists($offset)
+    {
+        return isset($this->vars['fields'][$offset]);
+    }
+
+    public function offsetGet($offset)
+    {
+        if (isset($this->vars['fields'][$offset])) {
+            return $this->vars['fields'][$offset];
+        }
+        return null;
+    }
+
+    public function offsetSet($offset, $value)
+    {
+        throw new \BadMethodCallException("ArrayAccess of ThemeRenderer is not writable.");
+    }
+
+    public function offsetUnset($offset)
+    {
+        throw new \BadMethodCallException("ArrayAccess of ThemeRenderer is not writable.");
     }
 }
