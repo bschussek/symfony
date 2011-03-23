@@ -31,16 +31,25 @@ class DateTimeToLocalizedStringTransformer extends BaseDateTimeTransformer
 
     private $timeFormat;
 
-    public function __construct($inputTimezone = null, $outputTimezone = null, $dateFormat = null, $timeFormat = null)
+    /**
+     * @var \Locale
+     */
+    private $locale;
+
+    public function __construct($inputTimezone = null, $outputTimezone = null, $dateFormat = null, $timeFormat = null, $locale = null)
     {
         parent::__construct($inputTimezone, $outputTimezone);
 
-        if (is_null($dateFormat)) {
+        if ($dateFormat === null) {
             $dateFormat = \IntlDateFormatter::MEDIUM;
         }
 
-        if (is_null($timeFormat)) {
+        if ($timeFormat === null) {
             $timeFormat = \IntlDateFormatter::SHORT;
+        }
+
+        if ($locale === null) {
+            $locale = \Locale::getDefault();
         }
 
         if (!in_array($dateFormat, self::$formats, true)) {
@@ -53,6 +62,7 @@ class DateTimeToLocalizedStringTransformer extends BaseDateTimeTransformer
 
         $this->dateFormat = $dateFormat;
         $this->timeFormat = $timeFormat;
+        $this->locale = $locale;
     }
 
     /**
@@ -132,6 +142,6 @@ class DateTimeToLocalizedStringTransformer extends BaseDateTimeTransformer
         $timeFormat = $this->timeFormat;
         $timezone = $this->outputTimezone;
 
-        return new \IntlDateFormatter(\Locale::getDefault(), $dateFormat, $timeFormat, $timezone);
+        return new \IntlDateFormatter($this->locale, $dateFormat, $timeFormat, $timezone);
     }
 }

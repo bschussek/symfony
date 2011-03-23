@@ -25,15 +25,18 @@ class DateType extends AbstractType
 {
     public function configure(FormBuilder $builder, array $options)
     {
-        $formatter = new \IntlDateFormatter(
-            \Locale::getDefault(),
-            $options['format'],
-            \IntlDateFormatter::NONE
-        );
-
         if ($options['widget'] === 'text') {
-            $builder->setClientTransformer(new DateTimeToLocalizedStringTransformer($options['data_timezone'], $options['user_timezone'], $options['format'], \IntlDateFormatter::NONE));
+            $builder->setClientTransformer(new DateTimeToLocalizedStringTransformer(
+                $options['data_timezone'], $options['user_timezone'],
+                $options['format'], \IntlDateFormatter::NONE, $options['locale']
+            ));
         } else {
+            $formatter = new \IntlDateFormatter(
+                $options['locale'] ?: \Locale::getDefault(),
+                $options['format'],
+                \IntlDateFormatter::NONE
+            );
+
             // Only pass a subset of the options to children
             $yearOptions = array(
                 'choice_list' => new PaddedChoiceList(
@@ -85,6 +88,7 @@ class DateType extends AbstractType
             'widget' => 'choice',
             'input' => 'datetime',
             'pattern' => null,
+            'locale' => null,
             'format' => \IntlDateFormatter::MEDIUM,
             'data_timezone' => null,
             'user_timezone' => null,
