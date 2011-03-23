@@ -34,6 +34,8 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase
 
     protected $dispatcher;
 
+    protected $chainLoader;
+
     protected function setUp()
     {
         $this->theme = $this->getMock('Symfony\Component\Form\Renderer\Theme\FormThemeInterface');
@@ -47,10 +49,10 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase
         $this->em = $this->getMockBuilder('Doctrine\ORM\EntityManager')
             ->disableOriginalConstructor()
             ->getMock();
-        $loader = new DefaultTypeLoader();
-        $this->factory = new FormFactory($loader);
-        $loader->initialize($this->factory, $this->theme, $this->csrfProvider,
-                $this->validator, $this->storage, $this->em);
+        $loader = new DefaultTypeLoader($this->theme, $this->validator, $this->csrfProvider, $this->storage);
+        $this->chainLoader = new \Symfony\Component\Form\Type\Loader\TypeLoaderChain();
+        $this->chainLoader->addLoader($loader);
+        $this->factory = new FormFactory($this->chainLoader);
 
         $this->builder = new FormBuilder($this->dispatcher);
     }
