@@ -27,17 +27,20 @@ use Symfony\Component\Form\Exception\UnexpectedTypeException;
  */
 class DateTimeToArrayTransformer extends BaseDateTimeTransformer
 {
-    /**
-     * {@inheritDoc}
-     */
-    protected function configure()
-    {
-        $this->addOption('input_timezone', date_default_timezone_get());
-        $this->addOption('output_timezone', date_default_timezone_get());
-        $this->addOption('pad', false);
-        $this->addOption('fields', array('year', 'month', 'day', 'hour', 'minute', 'second'));
+    private $pad;
 
-        parent::configure();
+    private $fields;
+
+    public function __construct($inputTimezone = null, $outputTimezone = null, $fields = null, $pad = false)
+    {
+        parent::__construct($inputTimezone, $outputTimezone);
+
+        if (is_null($fields)) {
+            $fields = array('year', 'month', 'day', 'hour', 'minute', 'second');
+        }
+
+        $this->fields = $fields;
+        $this->pad =$pad;
     }
 
     /**
@@ -56,15 +59,15 @@ class DateTimeToArrayTransformer extends BaseDateTimeTransformer
                 'hour'    => '',
                 'minute'  => '',
                 'second'  => '',
-            ), array_flip($this->getOption('fields')));
+            ), array_flip($this->fields));
         }
 
         if (!$dateTime instanceof \DateTime) {
             throw new UnexpectedTypeException($dateTime, '\DateTime');
         }
 
-        $inputTimezone = $this->getOption('input_timezone');
-        $outputTimezone = $this->getOption('output_timezone');
+        $inputTimezone = $this->inputTimezone;
+        $outputTimezone = $this->outputTimezone;
 
         if ($inputTimezone != $outputTimezone) {
             $dateTime->setTimezone(new \DateTimeZone($outputTimezone));
@@ -77,9 +80,9 @@ class DateTimeToArrayTransformer extends BaseDateTimeTransformer
             'hour'    => $dateTime->format('H'),
             'minute'  => $dateTime->format('i'),
             'second'  => $dateTime->format('s'),
-        ), array_flip($this->getOption('fields')));
+        ), array_flip($this->fields));
 
-        if (!$this->getOption('pad')) {
+        if (!$this->pad) {
             foreach ($result as &$entry) {
                 // remove leading zeros
                 $entry = (string)(int)$entry;
@@ -101,8 +104,8 @@ class DateTimeToArrayTransformer extends BaseDateTimeTransformer
             return null;
         }
 
-        $inputTimezone = $this->getOption('input_timezone');
-        $outputTimezone = $this->getOption('output_timezone');
+        $inputTimezone = $this->inputTimezone;
+        $outputTimezone = $this->outputTimezone;
 
         if (!is_array($value)) {
             throw new UnexpectedTypeException($value, 'array');
@@ -114,7 +117,7 @@ class DateTimeToArrayTransformer extends BaseDateTimeTransformer
 
         $emptyFields = array();
 
-        foreach ($this->getOption('fields') as $field) {
+        foreach ($this->fields as $field) {
             if (empty($value[$field])) {
                 $emptyFields[] = $field;
             }

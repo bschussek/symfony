@@ -11,9 +11,7 @@
 
 namespace Symfony\Component\Form\DataTransformer;
 
-use Symfony\Component\Form\Configurable;
-
-abstract class BaseDateTimeTransformer extends Configurable implements DataTransformerInterface
+abstract class BaseDateTimeTransformer implements DataTransformerInterface
 {
     protected static $formats = array(
         \IntlDateFormatter::NONE,
@@ -22,4 +20,14 @@ abstract class BaseDateTimeTransformer extends Configurable implements DataTrans
         \IntlDateFormatter::MEDIUM,
         \IntlDateFormatter::SHORT,
     );
+
+    protected $inputTimezone;
+
+    protected $outputTimezone;
+
+    public function __construct($inputTimezone = null, $outputTimezone = null)
+    {
+        $this->inputTimezone = $inputTimezone ?: date_default_timezone_get();
+        $this->outputTimezone = $outputTimezone ?: date_default_timezone_get();
+    }
 }

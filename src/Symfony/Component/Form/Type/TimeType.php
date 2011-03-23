@@ -51,38 +51,20 @@ class TimeType extends AbstractType
 
         if ($options['input'] === 'string') {
             $builder->setNormTransformer(new ReversedTransformer(
-                new DateTimeToStringTransformer(array(
-                    'format' => 'H:i:s',
-                    'input_timezone' => $options['data_timezone'],
-                    'output_timezone' => $options['data_timezone'],
-                ))
+                new DateTimeToStringTransformer($options['data_timezone'], $options['data_timezone'], 'H:i:s')
             ));
         } else if ($options['input'] === 'timestamp') {
             $builder->setNormTransformer(new ReversedTransformer(
-                new DateTimeToTimestampTransformer(array(
-                    'input_timezone' => $options['data_timezone'],
-                    'output_timezone' => $options['data_timezone'],
-                ))
+                new DateTimeToTimestampTransformer($options['data_timezone'], $options['data_timezone'])
             ));
         } else if ($options['input'] === 'array') {
             $builder->setNormTransformer(new ReversedTransformer(
-                new DateTimeToArrayTransformer(array(
-                    'input_timezone' => $options['data_timezone'],
-                    'output_timezone' => $options['data_timezone'],
-                    'fields' => $parts,
-                ))
+                new DateTimeToArrayTransformer($options['data_timezone'], $options['data_timezone'], $parts)
             ));
         }
 
         $builder
-            ->setClientTransformer(new DateTimeToArrayTransformer(array(
-                'input_timezone' => $options['data_timezone'],
-                'output_timezone' => $options['user_timezone'],
-                // if the field is rendered as choice field, the values should be trimmed
-                // of trailing zeros to render the selected choices correctly
-                'pad' => $options['widget'] === 'text',
-                'fields' => $parts,
-            )))
+            ->setClientTransformer(new DateTimeToArrayTransformer($options['data_timezone'], $options['user_timezone'], $parts, $options['widget'] === 'text'))
             ->setRendererVar('widget', $options['widget'])
             ->setRendererVar('with_seconds', $options['with_seconds']);
     }
@@ -98,8 +80,8 @@ class TimeType extends AbstractType
             'input' => 'datetime',
             'with_seconds' => false,
             'pattern' => null,
-            'data_timezone' => date_default_timezone_get(),
-            'user_timezone' => date_default_timezone_get(),
+            'data_timezone' => null,
+            'user_timezone' => null,
             'csrf_protection' => false,
             // Don't modify \DateTime classes by reference, we treat
             // them like immutable value objects
