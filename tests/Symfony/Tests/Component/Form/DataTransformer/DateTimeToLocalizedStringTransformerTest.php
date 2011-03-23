@@ -256,4 +256,12 @@ class DateTimeToLocalizedStringTransformerTest extends DateTimeTestCase
 
         new DateTimeToLocalizedStringTransformer(null, null, null, 'foobar');
     }
+
+    public function testValidatePassLocale()
+    {
+        $transformer = new DateTimeToLocalizedStringTransformer('UTC', 'UTC', \IntlDateFormatter::SHORT, null, 'en');
+        $value = $transformer->transform($this->dateTime);
+
+        $this->assertEquals('2/3/10 4:05 AM', $value);
+    }
 }

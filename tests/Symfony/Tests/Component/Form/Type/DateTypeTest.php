@@ -428,4 +428,18 @@ class DateTypeTest extends DateTimeTestCase
 
         $this->assertTrue($field->isPartiallyFilled());
     }
+
+    public function testLocale()
+    {
+        $field = $this->factory->create('date', 'name', array(
+            'locale' => 'en',
+        ));
+
+        $field->bind(array(
+            'day' => '1',
+            'month' => 'March',
+            'year' => '2010',
+        ));
+        $this->assertEquals('2010-03-01', $field->getData()->format('Y-m-d'));
+    }
 }
