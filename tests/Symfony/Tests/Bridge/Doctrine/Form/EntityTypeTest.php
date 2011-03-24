@@ -33,10 +33,6 @@ class EntityTypeTest extends DoctrineOrmTestCase
     {
         parent::setUp();
 
-        if (!$this->chainLoader->hasType('entity')) {
-            $this->markTestSkipped('No entity type.');
-        }
-
         $this->em = $this->createTestEntityManager();
         $this->chainLoader->addLoader(new DoctrineTypeLoader($this->em));
 
