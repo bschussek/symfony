@@ -36,7 +36,7 @@ class MonthChoiceList extends PaddedChoiceList
             // segmentation fault, so let's restore the old state instead
             $formatter->setPattern($pattern);
 
-            DefaultChoiceList::__construct($choices, $preferredChoices);
+            parent::__construct($choices, $preferredChoices);
         } else {
             parent::__construct($months, 2, '0', STR_PAD_LEFT, $preferredChoices);
         }

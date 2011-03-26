@@ -15,7 +15,6 @@ use Symfony\Component\Form\Exception\UnexpectedTypeException;
 
 class DefaultChoiceList implements ChoiceListInterface
 {
-    private $form;
 
     /**
      * Stores the preferred choices with the choices as keys
