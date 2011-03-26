@@ -29,6 +29,6 @@ class StripTagsListener implements EventSubscriberInterface
 
     public static function getSubscribedEvents()
     {
-        return Events::filterBoundDataFromClient;
+        return Events::filterBoundClientData;
     }
 }
