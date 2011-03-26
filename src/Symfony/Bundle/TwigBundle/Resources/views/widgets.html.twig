@@ -21,7 +21,7 @@
             <li>{% trans error.messageTemplate with error.messageParameters from 'validators' %}</li>
         {% endfor %}
     </ul>
-    {% endif %}  	
+    {% endif %}
 {% endspaceless %}
 {% endblock field__errors %}
 
@@ -220,3 +220,10 @@
     {{ block('field__rows') }}
 {% endspaceless %}
 {% endblock repeated__row %}
+
+{% block email__widget %}
+{% spaceless %}
+    {% set type = type|default('email') %}
+    {{ block('field__widget') }}
+{% endspaceless %}
+{% endblock email__widget %}
