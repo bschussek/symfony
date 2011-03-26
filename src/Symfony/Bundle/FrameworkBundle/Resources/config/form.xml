@@ -34,7 +34,7 @@
             <argument type="service" id="form.type.loader" />
             <argument type="service" id="form.renderer.factory.loader" />
             <!--
-            All services with tag "form.guesser" are inserted here by 
+            All services with tag "form.guesser" are inserted here by
             AddFormGuessersPass
             -->
             <argument type="collection" />
@@ -45,39 +45,39 @@
             <tag name="form.guesser" />
             <argument type="service" id="validator.mapping.class_metadata_factory" />
         </service>
-        
+
         <!-- CsrfProvider -->
         <service id="form.csrf_provider" class="%form.csrf_provider.class%">
             <argument type="service" id="session" />
             <argument>%form.csrf_protection.secret%</argument>
         </service>
-        
+
         <!-- RendererFactoryLoader -->
         <service id="form.renderer.factory.loader" class="%form.renderer.factory.loader.class%">
             <argument type="service" id="service_container" />
             <!--
-            All services with tag "form.renderer.factory" are inserted here by 
+            All services with tag "form.renderer.factory" are inserted here by
             AddFormRendererFactoriesPass
             -->
             <argument type="collection" />
         </service>
-        
+
         <!-- RendererFactories -->
         <service id="form.renderer.factory.twig" class="%form.renderer.factory.theme.class%">
             <tag name="form.renderer.factory" alias="twig" />
             <argument type="service" id="form.theme.factory.twig" />
         </service>
-        
+
         <service id="form.renderer.factory.default" class="%form.renderer.factory.theme.class%">
             <tag name="form.renderer.factory" alias="default" />
             <argument type="service" id="form.theme.factory.default" />
         </service>
-        
+
         <service id="form.renderer.factory.php" class="%form.renderer.factory.theme.class%">
             <tag name="form.renderer.factory" alias="php" />
             <argument type="service" id="form.theme.factory.php" />
         </service>
-        
+
         <!-- Themes -->
         <service id="form.theme.factory.twig" class="%form.theme.factory.twig.class%">
             <argument type="service" id="twig" />
@@ -92,7 +92,7 @@
             <argument type="service" id="templating.engine.php" />
             <argument>%form.theme.template.phpengine%</argument>
         </service>
-        
+
         <!-- TemporaryStorage - where should we put this? -->
         <service id="file.temporary_storage" class="%file.temporary_storage.class%">
             <argument type="service" id="session" />
@@ -100,17 +100,17 @@
             <argument>%file.temporary_storage.nesting_levels%</argument>
             <argument>%file.temporary_storage.directory%</argument>
         </service>
-        
+
         <!-- ContainerAwareTypeLoader -->
         <service id="form.type.loader" class="%form.type.loader.class%">
             <argument type="service" id="service_container" />
             <!--
-            All services with tag "form.type" are inserted here by 
+            All services with tag "form.type" are inserted here by
             AddFormTypesPass
             -->
             <argument type="collection" />
         </service>
-        
+
         <!-- FieldTypes -->
         <service id="form.type.field" class="Symfony\Component\Form\Type\FieldType">
             <tag name="form.type" alias="field" />
@@ -137,6 +137,9 @@
         <service id="form.type.csrf" class="Symfony\Component\Form\Type\CsrfType">
             <tag name="form.type" alias="csrf" />
             <argument type="service" id="form.csrf_provider" />
+        </service>
+        <service id="form.type.email" class="Symfony\Component\Form\Type\EmailType">
+            <tag name="form.type" alias="email" />
         </service>
         <service id="form.type.date" class="Symfony\Component\Form\Type\DateType">
             <tag name="form.type" alias="date" />
@@ -193,6 +196,6 @@
         <service id="form.type.url" class="Symfony\Component\Form\Type\UrlType">
             <tag name="form.type" alias="url" />
         </service>
-        
+
     </services>
 </container>
