@@ -16,7 +16,7 @@ use Symfony\Component\Validator\ValidatorInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\Type;
 use Symfony\Component\Form\Type\FormTypeInterface;
-use Symfony\Component\Form\Type\AbstractFieldType;
+use Symfony\Component\Form\Type\AbstractType;
 use Symfony\Component\Form\Type\Loader\TypeLoaderInterface;
 use Symfony\Component\Form\Type\Loader\DefaultTypeLoader;
 use Symfony\Component\Form\Renderer\Theme\FormThemeFactoryInterface;
@@ -68,7 +68,7 @@ class DefaultFormFactory extends FormFactory
             TemporaryStorage $tempStorage,
             $entityManager = null)
     {
-        $typeLoader = new DefaultTypeLoader();
+        $typeLoader = new DefaultTypeLoader($themeFactory);
         $factory = new self($typeLoader);
         $typeLoader->initialize($factory, $themeFactory, null, $crsfProvider, $validator, $tempStorage, $entityManager);
 
@@ -92,7 +92,7 @@ class DefaultFormFactory extends FormFactory
     /**
      * @param AbstractFieldType $config
      */
-    public function addConfig(AbstractFieldType $config)
+    public function addConfig(AbstractType $config)
     {
         $this->typeLoader->addConfig($config);
     }
