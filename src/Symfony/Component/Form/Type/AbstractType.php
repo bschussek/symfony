@@ -45,8 +45,13 @@ abstract class AbstractType implements FormTypeInterface
         return 'form';
     }
 
+    /**
+     * Is used to determain the block used for rendering.
+     *
+     * @return string
+     */
     public function getName()
     {
-        return get_class($this);
+        return current(array_reverse(explode('\\', get_class($this))));
     }
 }
