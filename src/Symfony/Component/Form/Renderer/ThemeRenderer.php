@@ -89,7 +89,7 @@ class ThemeRenderer implements ThemeRendererInterface, \ArrayAccess, \IteratorAg
     {
         reset($this->blockHistory);
 
-        return current($this->block);
+        return current($this->blockHistory);
     }
 
     public function setVar($name, $value)
