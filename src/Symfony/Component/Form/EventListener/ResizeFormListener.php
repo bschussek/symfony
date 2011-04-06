@@ -92,7 +92,7 @@ class ResizeFormListener implements EventSubscriberInterface
         $form = $event->getForm();
         $data = $event->getData();
 
-        if (null === $data) {
+        if (null === $data || '' === $data) {
             $data = array();
         }
 
