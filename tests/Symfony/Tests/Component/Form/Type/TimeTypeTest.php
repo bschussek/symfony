@@ -38,6 +38,48 @@ class TimeTypeTest extends LocalizedTestCase
         $this->assertEquals($input, $form->getClientData());
     }
 
+    public function testSubmit_dateTime_minuteIsZero()
+    {
+        $form = $this->factory->create('time', 'name', array(
+            'data_timezone' => 'UTC',
+            'user_timezone' => 'UTC',
+            'input' => 'datetime',
+        ));
+
+        $input = array(
+            'hour' => '3',
+            'minute' => '0',
+        );
+
+        $form->bind($input);
+
+        $dateTime = new \DateTime('1970-01-01 03:00:00 UTC');
+
+        $this->assertEquals($dateTime, $form->getData());
+        $this->assertEquals($input, $form->getClientData());
+    }
+
+    public function testSubmit_dateTime_hourIsZero()
+    {
+        $form = $this->factory->create('time', 'name', array(
+            'data_timezone' => 'UTC',
+            'user_timezone' => 'UTC',
+            'input' => 'datetime',
+        ));
+
+        $input = array(
+            'hour' => '0',
+            'minute' => '4',
+        );
+
+        $form->bind($input);
+
+        $dateTime = new \DateTime('1970-01-01 00:04:00 UTC');
+
+        $this->assertEquals($dateTime, $form->getData());
+        $this->assertEquals($input, $form->getClientData());
+    }
+
     public function testSubmit_string()
     {
         $form = $this->factory->create('time', 'name', array(
