@@ -167,7 +167,7 @@ class DateType extends AbstractType
     /**
      * {@inheritdoc}
      */
-    public function getDefaultOptions(array $options)
+    public function getDefaultOptions()
     {
         return array(
             'years'          => range(date('Y') - 5, date('Y') + 5),
@@ -194,7 +194,7 @@ class DateType extends AbstractType
     /**
      * {@inheritdoc}
      */
-    public function getAllowedOptionValues(array $options)
+    public function getAllowedOptionValues()
     {
         return array(
             'input'     => array(
