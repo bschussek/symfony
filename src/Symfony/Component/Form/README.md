@@ -31,3 +31,4 @@ PHPUnit:
     export SYMFONY_LOCALE=../path/to/Locale
     export SYMFONY_VALIDATOR=../path/to/Validator
     export SYMFONY_HTTP_FOUNDATION=../path/to/HttpFoundation
+    export SYMFONY_OPTIONS_PARSER=../path/to/OptionsParser

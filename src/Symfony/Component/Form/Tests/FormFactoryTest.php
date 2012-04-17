@@ -279,7 +279,7 @@ class FormFactoryTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException Symfony\Component\Form\Exception\InvalidOptionException
+     * @expectedException Symfony\Component\OptionsParser\Exception\InvalidOptionsException
      */
     public function testCreateNamedBuilderExpectsOptionsToExist()
     {
@@ -292,7 +292,7 @@ class FormFactoryTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException Symfony\Component\Form\Exception\InvalidOptionException
+     * @expectedException Symfony\Component\OptionsParser\Exception\InvalidOptionsException
      */
     public function testCreateNamedBuilderExpectsOptionsToBeInValidRange()
     {
@@ -513,7 +513,7 @@ class FormFactoryTest extends \PHPUnit_Framework_TestCase
 
         $factory = new FormFactory(array(new \Symfony\Component\Form\Extension\Core\CoreExtension()));
 
-        $this->setExpectedException('Symfony\Component\Form\Exception\InvalidOptionException',
+        $this->setExpectedException('Symfony\Component\OptionsParser\Exception\InvalidOptionsException',
             'The options "invalid", "unknown" do not exist. Known options are: ' .
             '"attr", "by_reference", "data", "data_class", "disabled", ' .
             '"empty_data", "error_bubbling", "error_mapping", "invalid_message", ' .
@@ -530,7 +530,7 @@ class FormFactoryTest extends \PHPUnit_Framework_TestCase
 
         $factory = new FormFactory(array(new \Symfony\Component\Form\Extension\Core\CoreExtension()));
 
-        $this->setExpectedException('Symfony\Component\Form\Exception\InvalidOptionException',
+        $this->setExpectedException('Symfony\Component\OptionsParser\Exception\InvalidOptionsException',
             'The option "unknown" does not exist. Known options are: "attr", ' .
             '"by_reference", "data", "data_class", "disabled", "empty_data", ' .
             '"error_bubbling", "error_mapping", "invalid_message", ' .
