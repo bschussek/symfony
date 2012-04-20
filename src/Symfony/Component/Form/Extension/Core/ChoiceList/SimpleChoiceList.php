@@ -46,32 +46,7 @@ class SimpleChoiceList extends ChoiceList
      */
     public function __construct(array $choices, array $preferredChoices = array())
     {
-        // Flip preferred choices to speed up lookup
-        parent::__construct($choices, $choices, array_flip($preferredChoices));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getChoicesForValues(array $values)
-    {
-        $values = $this->fixValues($values);
-
-        // The values are identical to the choices, so we can just return them
-        // to improve performance a little bit
-        return $this->fixChoices(array_intersect($values, $this->getValues()));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getValuesForChoices(array $choices)
-    {
-        $choices = $this->fixChoices($choices);
-
-        // The choices are identical to the values, so we can just return them
-        // to improve performance a little bit
-        return $this->fixValues(array_intersect($choices, $this->getValues()));
+        parent::__construct($choices, $choices, $preferredChoices);
     }
 
     /**
@@ -119,22 +94,6 @@ class SimpleChoiceList extends ChoiceList
     }
 
     /**
-     * Returns whether the given choice should be preferred judging by the
-     * given array of preferred choices.
-     *
-     * Optimized for performance by treating the preferred choices as array
-     * where choices are stored in the keys.
-     *
-     * @param mixed $choice The choice to test.
-     * @param array $preferredChoices An array of preferred choices.
-     */
-    protected function isPreferred($choice, $preferredChoices)
-    {
-        // Optimize performance over the default implementation
-        return isset($preferredChoices[$choice]);
-    }
-
-    /**
      * Converts the choice to a valid PHP array key.
      *
      * @param mixed $choice The choice.
@@ -157,10 +116,9 @@ class SimpleChoiceList extends ChoiceList
     /**
      * {@inheritdoc}
      */
-    protected function createValue($choice)
+    protected function testScalarAndStringUnique(array $choices, array &$existingChoices = array())
     {
-        // Choices are guaranteed to be unique and scalar, so we can simply
-        // convert them to strings
-        return (string) $choice;
+        // We know this already, since choices are passed as array keys
+        return true;
     }
 }

@@ -63,6 +63,13 @@ class ChoiceList implements ChoiceListInterface
     private $remainingViews = array();
 
     /**
+     * Whether choices can be used directly as values in order to improve
+     * performance.
+     * @var Boolean
+     */
+    private $choicesAsValues;
+
+    /**
      * Creates a new choice list.
      *
      * @param array|\Traversable $choices          The array of choices. Choices may also be given
@@ -95,6 +102,17 @@ class ChoiceList implements ChoiceListInterface
         $this->values = array();
         $this->preferredViews = array();
         $this->remainingViews = array();
+
+        // If all of the choices are scalar and if the choices array contains
+        // no duplicates (when converted to string), use choices directly as
+        // values. Otherwise generate integers as values.
+        $this->choicesAsValues = $this->testScalarAndStringUnique($choices);
+
+        // Flip preferred choices to speed up lookup if our choices can be
+        // converted to unique strings
+        if ($this->choicesAsValues) {
+            $preferredChoices = array_flip($preferredChoices);
+        }
 
         $this->addChoices(
             $this->preferredViews,
@@ -143,6 +161,13 @@ class ChoiceList implements ChoiceListInterface
     public function getChoicesForValues(array $values)
     {
         $values = $this->fixValues($values);
+
+        if ($this->choicesAsValues) {
+            // The values are identical to the choices, so we can just return them
+            // to improve performance a little bit
+            return $this->fixChoices(array_intersect($values, $this->getValues()));
+        }
+
         $choices = array();
 
         foreach ($values as $j => $givenValue) {
@@ -167,6 +192,13 @@ class ChoiceList implements ChoiceListInterface
     public function getValuesForChoices(array $choices)
     {
         $choices = $this->fixChoices($choices);
+
+        if ($this->choicesAsValues) {
+            // The choices are identical to the values, so we can just return them
+            // to improve performance a little bit
+            return $this->fixValues(array_intersect($choices, $this->getValues()));
+        }
+
         $values = array();
 
         foreach ($this->choices as $i => $choice) {
@@ -369,6 +401,11 @@ class ChoiceList implements ChoiceListInterface
      */
     protected function isPreferred($choice, $preferredChoices)
     {
+        if ($this->choicesAsValues) {
+            // Optimize performance over the default implementation
+            return isset($preferredChoices[$choice]);
+        }
+
         return false !== array_search($choice, $preferredChoices, true);
     }
 
@@ -400,6 +437,12 @@ class ChoiceList implements ChoiceListInterface
      */
     protected function createValue($choice)
     {
+        if ($this->choicesAsValues) {
+            // Choices are guaranteed to be unique and scalar, so we can simply
+            // convert them to strings
+            return (string) $choice;
+        }
+
         return (string) count($this->values);
     }
 
@@ -494,5 +537,42 @@ class ChoiceList implements ChoiceListInterface
     protected function fixChoices(array $choices)
     {
         return $choices;
+    }
+
+    /**
+     * Checks that all of the given choices are scalar and contain no
+     * duplicates when converted to strings.
+     *
+     * @param  array $choices  The choices to check.
+     *
+     * @return Boolean  Whether all choices are scalar and string-unique.
+     */
+    protected function testScalarAndStringUnique(array $choices, array &$existingChoices = array())
+    {
+        foreach ($choices as $choice) {
+            // Support for choice groups
+            if (is_array($choice)) {
+                if (!$this->testScalarAndStringUnique($choice, $existingChoices)) {
+                    return false;
+                }
+
+                // Go to next choice (group)
+                continue;
+            }
+
+            if (!is_scalar($choice)) {
+                return false;
+            }
+
+            $choice = (string) $choice;
+
+            if (isset($existingChoices[$choice])) {
+                return false;
+            }
+
+            $existingChoices[$choice] = true;
+        }
+
+        return true;
     }
 }
