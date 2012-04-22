@@ -18,6 +18,7 @@ use Symfony\Component\Form\FormView;
 use Symfony\Component\Form\Exception\FormException;
 use Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceList;
 use Symfony\Component\Form\Extension\Core\ChoiceList\SimpleChoiceList;
+use Symfony\Component\Form\Extension\Core\ChoiceList\ObjectChoiceList;
 use Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceListInterface;
 use Symfony\Component\Form\Extension\Core\EventListener\FixRadioInputListener;
 use Symfony\Component\Form\Extension\Core\EventListener\FixCheckboxInputListener;
@@ -36,7 +37,19 @@ class ChoiceType extends AbstractType
     public function buildForm(FormBuilder $builder, array $options)
     {
         if ($options['choice_list'] && !$options['choice_list'] instanceof ChoiceListInterface) {
-            throw new FormException('The "choice_list" must be an instance of "Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceListInterface".');
+            throw new FormException('The "choice_list" option must be an instance of "Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceListInterface".');
+        }
+
+        if ($options['choice_labels'] && !is_array($options['choice_labels']) && !is_callable($options['choice_labels']) && !is_string($options['choice_labels'])) {
+            throw new FormException('The "choice_labels" option must either be an array, a callable or a string.');
+        }
+
+        if ($options['choice_values'] && !is_array($options['choice_values']) && !is_callable($options['choice_values']) && !is_string($options['choice_values'])) {
+            throw new FormException('The "choice_values" option must either be an array, a callable or a string.');
+        }
+
+        if ($options['group_by'] && !is_callable($options['group_by']) && !is_string($options['group_by'])) {
+            throw new FormException('The "group_by" option must either be a callable or a string.');
         }
 
         if (!$options['choice_list'] && !is_array($options['choices']) && !$options['choices'] instanceof \Traversable) {
@@ -146,10 +159,25 @@ class ChoiceType extends AbstractType
     public function getDefaultOptions()
     {
         $choiceList = function (Options $options) {
+            // Harden against NULL values (like in EntityType and ModelType)
+            $choices = null !== $options['choices'] ? $options['choices'] : array();
+
+            // TODO case where choice_labels are not given but object choices
+            if (null !== $options['choice_labels']) {
+                return new ChoiceList(
+                    $choices,
+                    $options['preferred_choices'],
+                    $options['choice_labels'],
+                    $options['choice_values'],
+                    $options['group_by']
+                );
+            }
+
             return new SimpleChoiceList(
-                // Harden against NULL values (like in EntityType and ModelType)
-                null !== $options['choices'] ? $options['choices'] : array(),
-                $options['preferred_choices']
+                $choices,
+                $options['preferred_choices'],
+                $options['choice_values'],
+                $options['group_by']
             );
         };
 
@@ -170,6 +198,9 @@ class ChoiceType extends AbstractType
             'expanded'          => false,
             'choice_list'       => $choiceList,
             'choices'           => array(),
+            'choice_labels'     => null,
+            'choice_values'     => null,
+            'group_by'          => null,
             'preferred_choices' => array(),
             'empty_data'        => $emptyData,
             'empty_value'       => $emptyValue,

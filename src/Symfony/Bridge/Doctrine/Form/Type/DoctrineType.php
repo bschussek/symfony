@@ -58,16 +58,22 @@ abstract class DoctrineType extends AbstractType
             return null;
         };
 
+        // For BC until Symfony 2.3
+        $choiceLabels = function (Options $options) {
+            return $options['property'];
+        };
+
         $choiceList = function (Options $options) use ($registry) {
             $manager = $registry->getManager($options['em']);
 
             return new EntityChoiceList(
                 $manager,
                 $options['class'],
-                $options['property'],
+                $options['choice_labels'],
                 $options['loader'],
                 $options['choices'],
-                $options['group_by']
+                $options['group_by'],
+                $options['preferred_choices']
             );
         };
 
@@ -78,8 +84,8 @@ abstract class DoctrineType extends AbstractType
             'query_builder'     => null,
             'loader'            => $loader,
             'choices'           => null,
-            'choice_list'       => $choiceList,
-            'group_by'          => null,
+            'choice_labels'     => $choiceLabels,
+            'choice_list'       => $choiceList
         );
     }
 

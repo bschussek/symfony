@@ -106,18 +106,6 @@ abstract class LazyChoiceList implements ChoiceListInterface
     /**
      * {@inheritdoc}
      */
-    public function getIndicesForChoices(array $choices)
-    {
-        if (!$this->choiceList) {
-            $this->load();
-        }
-
-        return $this->choiceList->getIndicesForChoices($choices);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getIndicesForValues(array $values)
     {
         if (!$this->choiceList) {

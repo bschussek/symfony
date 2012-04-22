@@ -114,16 +114,6 @@ interface ChoiceListInterface
     function getValuesForChoices(array $choices);
 
     /**
-     * Returns the indices corresponding to the given choices.
-     *
-     * @param array $choices An array of choices. Not existing choices in this
-     *                       array are ignored.
-     *
-     * @return array An array of indices with ascending, 0-based numeric keys
-     */
-    function getIndicesForChoices(array $choices);
-
-    /**
      * Returns the indices corresponding to the given values.
      *
      * @param array $values An array of choice values. Not existing values in

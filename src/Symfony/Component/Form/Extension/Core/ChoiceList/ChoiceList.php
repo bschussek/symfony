@@ -11,10 +11,15 @@
 
 namespace Symfony\Component\Form\Extension\Core\ChoiceList;
 
+use Traversable;
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\Exception\UnexpectedTypeException;
 use Symfony\Component\Form\Exception\InvalidConfigurationException;
+use Symfony\Component\Form\Exception\InvalidPropertyException;
+use Symfony\Component\Form\Exception\StringCastException;
+use Symfony\Component\Form\Exception\FormException;
 use Symfony\Component\Form\Extension\Core\View\ChoiceView;
+use Symfony\Component\Form\Util\PropertyPath;
 
 /**
  * A choice list for choices of arbitrary data types.
@@ -72,19 +77,33 @@ class ChoiceList implements ChoiceListInterface
     /**
      * Creates a new choice list.
      *
-     * @param array|\Traversable $choices          The array of choices. Choices may also be given
-     *                                             as hierarchy of unlimited depth. Hierarchies are
-     *                                             created by creating nested arrays. The title of
-     *                                             the sub-hierarchy can be stored in the array
-     *                                             key pointing to the nested array.
-     * @param array              $labels           The array of labels. The structure of this array
-     *                                             should match the structure of $choices.
-     * @param array              $preferredChoices A flat array of choices that should be
-     *                                             presented to the user with priority.
+     * @param array|\Traversable $choices    The array of choices. Choices may also be given
+     *                                       as hierarchy of unlimited depth. Hierarchies are
+     *                                       created by creating nested arrays. The title of
+     *                                       the sub-hierarchy can be stored in the array
+     *                                       key pointing to the nested array.
+     * @param array $preferredChoices        A flat array of choices that should be
+     *                                       presented to the user with priority.
+     * @param array|callable|string $labels  The array of labels. The structure of this array
+     *                                       should match the structure of $choices.
+     *                                       If a callable is passed, it will be evaluated
+     *                                       for each choice. If a string is passed, the choices
+     *                                       must be objects. The string is then interpreted as
+     *                                       property path for reading the label.
+     * @param array|callable|string $values  The array of values. The structure of this array
+     *                                       should match the structure of $choices.
+     *                                       If a callable is passed, it will be evaluated
+     *                                       for each choice. If a string is passed, the choices
+     *                                       must be objects. The string is then interpreted as
+     *                                       property path for reading the value.
+     * @param callable|string $groupBy       The callable for determining the group(s) of each
+     *                                       choice. If a string is passed, the choices
+     *                                       must be objects. The string is then interpreted as
+     *                                       property path for reading the group(s).
      */
-    public function __construct($choices, array $labels, array $preferredChoices = array())
+    public function __construct($choices, $preferredChoices = array(), $labels = null, $values = null, $groupBy = null)
     {
-        $this->initialize($choices, $labels, $preferredChoices);
+        $this->initialize($choices, $preferredChoices, $labels, $values, $groupBy);
     }
 
     /**
@@ -92,21 +111,228 @@ class ChoiceList implements ChoiceListInterface
      *
      * Safe to be called multiple times. The list is cleared on every call.
      *
-     * @param array|\Traversable $choices The choices to write into the list.
-     * @param array $labels The labels belonging to the choices.
-     * @param array $preferredChoices The choices to display with priority.
+     * @see __construct
      */
-    protected function initialize($choices, array $labels, array $preferredChoices)
+    protected function initialize($choices, $preferredChoices, $labels, $values, $groupBy)
     {
+        if (!is_array($choices) && !$choices instanceof Traversable) {
+            throw new UnexpectedTypeException($choices, 'array or \Traversable');
+        }
+
+        if (!is_array($preferredChoices) && !is_callable($preferredChoices) && !is_string($preferredChoices)) {
+            throw new UnexpectedTypeException($preferredChoices, 'array, callable or string');
+        }
+
+        if (null !== $labels && !is_array($labels) && !is_callable($labels) && !is_string($labels)) {
+            throw new UnexpectedTypeException($labels, 'null, array, callable or string');
+        }
+
+        if (null !== $values && !is_array($values) && !is_callable($values) && !is_string($values)) {
+            throw new UnexpectedTypeException($values, 'null, array, callable or string');
+        }
+
+        if (null !== $groupBy && !is_callable($groupBy) && !is_string($groupBy)) {
+            throw new UnexpectedTypeException($groupBy, 'null, callable or string');
+        }
+
         $this->choices = array();
         $this->values = array();
         $this->preferredViews = array();
         $this->remainingViews = array();
+        $this->choicesAsValues = null === $values
+            ? $this->testScalarAndStringUnique($choices)
+            : false;
 
-        // If all of the choices are scalar and if the choices array contains
-        // no duplicates (when converted to string), use choices directly as
-        // values. Otherwise generate integers as values.
-        $this->choicesAsValues = $this->testScalarAndStringUnique($choices);
+        $objectsOnly = $this->choicesAsValues
+            ? false
+            : $this->testObjectsOnly($choices);
+
+        // Groups as property paths
+        if (is_string($groupBy)) {
+            if (!$objectsOnly) {
+                throw new FormException('The choice groups can only be configured as property path if the choices are objects.');
+            }
+
+            $groupPath = new PropertyPath($groupBy);
+            $groupBy = function ($choice) use ($groupPath) {
+                try {
+                    return $groupPath->getValue($choice);
+                } catch (InvalidPropertyException $e) {
+                    return null;
+                }
+            };
+        }
+
+        // Preferred as property path
+        if (is_string($preferredChoices)) {
+            if (!$objectsOnly) {
+                throw new FormException('The preferred choices can only be configured as property path if the choices are objects.');
+            }
+
+            $preferredPath = new PropertyPath($preferredChoices);
+            $preferredChoices = function ($choice) use ($preferredPath) {
+                try {
+                    return (Boolean) $preferredPath->getValue($choice);
+                } catch (InvalidPropertyException $e) {
+                    return false;
+                }
+            };
+        }
+
+        // Labels as property paths
+        if (is_string($labels)) {
+            if (!$objectsOnly) {
+                throw new FormException('The choice labels can only be configured as property path if the choices are objects.');
+            }
+
+            $labelPath = new PropertyPath($labels);
+            $labels = function ($choice) use ($labelPath) {
+                return (string) $labelPath->getValue($choice);
+            };
+        } elseif (null === $labels) {
+            if ($objectsOnly) {
+                $labels = function ($choice) {
+                    if (!method_exists($choice, '__toString')) {
+                        throw new StringCastException('A "__toString()" method was not found on the objects of type "' . get_class($choice) . '" passed to the choice field. To read a custom getter instead, set the choice labels to the desired property path.');
+                    }
+
+                    return $choice->__toString();
+                };
+            } else {
+                $labels = $choices;
+            }
+        }
+
+        // Values as property paths
+        if (is_string($values)) {
+            if (!$objectsOnly) {
+                throw new FormException('The choice values can only be configured as property path if the choices are objects.');
+            }
+
+            $valuePath = new PropertyPath($values);
+            $values = function ($choice) use ($valuePath) {
+                return (string) $valuePath->getValue($choice);
+            };
+        } elseif (null === $values) {
+            // If all of the choices are scalar and if the choices array contains
+            // no duplicates (when converted to string), use choices directly as
+            // values
+            if ($this->choicesAsValues) {
+                $values = function ($choice) {
+                    return (string) $choice;
+                };
+            // Else generate integer numbers
+            } else {
+                $nextVal = 0;
+                $values = function ($choice) use (&$nextVal) {
+                    return (string) $nextVal++;
+                };
+            }
+        }
+
+        if (is_callable($groupBy)) {
+            // This closure identifies the groups of every choice and stores the
+            // result in an array with the same structure as the original
+            // $choices array
+            $groupBy = function ($choice) use ($groupBy) {
+                $groups = call_user_func($groupBy, $choice);
+
+                if (null !== $groups && !is_string($groups) && !is_array($groups)) {
+                    throw new FormException('The callable generating the choice group should return a string or an array of strings, but returned a ' . gettype($groups) . ' instead.');
+                }
+
+                if (is_array($groups)) {
+                    foreach ($groups as $group) {
+                        if (!is_string($group)) {
+                            throw new FormException('The callable generating the choice group should return an array of strings, but returned an array with a ' . gettype($group) . ' instead.');
+                        }
+                    }
+                }
+
+                return (array) $groups;
+            };
+
+            $groupInto = function (&$output) {
+                // Sorts $choice into $output at the level specified by
+                // $groups[$key]
+                return function ($choice, $key, array $groups) use (&$output) {
+                    if (is_array($choice)) {
+                        throw new FormException('The passed arrays should be flat when using choice grouping. A nested array was found at index ' . $key . '.');
+                    }
+
+                    if (!array_key_exists($key, $groups)) {
+                        throw new FormException('The choice values/labels should have the same keys as the choices.');
+                    }
+
+                    foreach ($groups[$key] as $group) {
+                        if (!isset($output[$group])) {
+                            $output[$group] = array();
+                        }
+
+                        $output = &$output[$group];
+                    }
+
+                    $output[] = $choice;
+                };
+            };
+
+            $groups = array_map($groupBy, $choices);
+
+            $groupedChoices = array();
+            array_walk($choices, $groupInto($groupedChoices), $groups);
+            $choices = $groupedChoices;
+
+            if (is_array($labels)) {
+                $groupedLabels = array();
+                array_walk($labels, $groupInto($groupedLabels), $groups);
+                $labels = $groupedLabels;
+            }
+
+            if (is_array($values)) {
+                $groupedValues = array();
+                array_walk($values, $groupInto($groupedValues), $groups);
+                $values = $groupedValues;
+            }
+        }
+
+        if (is_callable($labels)) {
+            // Wrap callable to test its return value
+            $labels = self::arrayMapRecursive($choices, function ($choice) use ($labels) {
+                $label = call_user_func($labels, $choice);
+
+                if (!is_string($label)) {
+                    throw new FormException('The callable generating the choice labels should return strings, but returned a ' . gettype($label) . ' instead.');
+                }
+
+                return $label;
+            });
+        }
+
+        if (is_callable($preferredChoices)) {
+            // Wrap callable to test its return value
+            $preferredChoices = self::arrayFilterRecursive($choices, function ($choice) use ($preferredChoices) {
+                $isPreferred = call_user_func($preferredChoices, $choice);
+
+                if (!is_bool($isPreferred)) {
+                    throw new FormException('The callable deciding whether a choice is preferred should return a Boolean, but returned a ' . gettype($isPreferred) . ' instead.');
+                }
+
+                return $isPreferred;
+            });
+        }
+
+        if (is_callable($values)) {
+            // Wrap callable to test its return value
+            $values = self::arrayMapRecursive($choices, function ($choice) use ($values) {
+                $value = call_user_func($values, $choice);
+
+                if (!is_string($value)) {
+                    throw new FormException('The callable generating the choice values should return strings, but returned a ' . gettype($value) . ' instead.');
+                }
+
+                return $value;
+            });
+        };
 
         // Flip preferred choices to speed up lookup if our choices can be
         // converted to unique strings
@@ -119,7 +345,8 @@ class ChoiceList implements ChoiceListInterface
             $this->remainingViews,
             $choices,
             $labels,
-            $preferredChoices
+            $preferredChoices,
+            $values
         );
     }
 
@@ -220,30 +447,6 @@ class ChoiceList implements ChoiceListInterface
     /**
      * {@inheritdoc}
      */
-    public function getIndicesForChoices(array $choices)
-    {
-        $choices = $this->fixChoices($choices);
-        $indices = array();
-
-        foreach ($this->choices as $i => $choice) {
-            foreach ($choices as $j => $givenChoice) {
-                if ($choice === $givenChoice) {
-                    $indices[] = $i;
-                    unset($choices[$j]);
-
-                    if (0 === count($choices)) {
-                        break 2;
-                    }
-                }
-            }
-        }
-
-        return $indices;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getIndicesForValues(array $values)
     {
         $values = $this->fixValues($values);
@@ -280,19 +483,21 @@ class ChoiceList implements ChoiceListInterface
      *                                 does not match the structure of the
      *                                 $choices array.
      */
-    protected function addChoices(&$bucketForPreferred, &$bucketForRemaining, $choices, $labels, array $preferredChoices)
+    protected function addChoices(&$bucketForPreferred, &$bucketForRemaining, $choices, array $labels, array $preferredChoices, array $values)
     {
-        if (!is_array($choices) && !$choices instanceof \Traversable) {
-            throw new UnexpectedTypeException($choices, 'array or \Traversable');
-        }
-
         // Add choices to the nested buckets
         foreach ($choices as $group => $choice) {
-            if (is_array($choice)) {
-                if (!is_array($labels)) {
-                    throw new UnexpectedTypeException($labels, 'array');
-                }
+            $choiceGroup = is_array($choice);
 
+            if (!isset($labels[$group]) || $choiceGroup !== is_array($labels[$group])) {
+                throw new FormException('The choice labels should have the same structure as the choices.');
+            }
+
+            if (!isset($values[$group]) || $choiceGroup !== is_array($values[$group])) {
+                throw new FormException('The choice values should have the same structure as the choices.');
+            }
+
+            if (is_array($choice)) {
                 // Don't do the work if the array is empty
                 if (count($choice) > 0) {
                     $this->addChoiceGroup(
@@ -301,7 +506,8 @@ class ChoiceList implements ChoiceListInterface
                         $bucketForRemaining,
                         $choice,
                         $labels[$group],
-                        $preferredChoices
+                        $preferredChoices,
+                        $values[$group]
                     );
                 }
             } else {
@@ -310,7 +516,8 @@ class ChoiceList implements ChoiceListInterface
                     $bucketForRemaining,
                     $choice,
                     $labels[$group],
-                    $preferredChoices
+                    $preferredChoices,
+                    $values[$group]
                 );
             }
         }
@@ -328,7 +535,7 @@ class ChoiceList implements ChoiceListInterface
      * @param array $labels The labels corresponding to the choices in the group.
      * @param array $preferredChoices The preferred choices.
      */
-    protected function addChoiceGroup($group, &$bucketForPreferred, &$bucketForRemaining, $choices, $labels, array $preferredChoices)
+    protected function addChoiceGroup($group, &$bucketForPreferred, &$bucketForRemaining, $choices, $labels, array $preferredChoices, array $values)
     {
         // If this is a choice group, create a new level in the choice
         // key hierarchy
@@ -340,7 +547,8 @@ class ChoiceList implements ChoiceListInterface
             $bucketForRemaining[$group],
             $choices,
             $labels,
-            $preferredChoices
+            $preferredChoices,
+            $values
         );
 
         // Remove child levels if empty
@@ -363,24 +571,18 @@ class ChoiceList implements ChoiceListInterface
      * @param string $label The label for the choice.
      * @param array $preferredChoices The preferred choices.
      */
-    protected function addChoice(&$bucketForPreferred, &$bucketForRemaining, $choice, $label, array $preferredChoices)
+    protected function addChoice(&$bucketForPreferred, &$bucketForRemaining, $choice, $label, array $preferredChoices, $value)
     {
+        // Outsource index creation in order to allow changing the indexing
+        // strategy. This is generally not recommended, but may allow
+        // performance improvements for certain implementations (such as
+        // EntityChoiceList)
         $index = $this->createIndex($choice);
 
-        if ('' === $index || null === $index || !Form::isValidName((string)$index)) {
-            throw new InvalidConfigurationException('The index "' . $index . '" created by the choice list is invalid. It should be a valid, non-empty Form name.');
-        }
-
-        $value = $this->createValue($choice);
-
-        if (!is_string($value)) {
-            throw new InvalidConfigurationException('The value created by the choice list is of type "' . gettype($value) . '", but should be a string.');
-        }
-
-        $view = new ChoiceView($value, $label);
-
         $this->choices[$index] = $this->fixChoice($choice);
-        $this->values[$index] = $value;
+        $this->values[$index] = (string) $value;
+
+        $view = new ChoiceView((string) $value, (string) $label);
 
         if ($this->isPreferred($choice, $preferredChoices)) {
             $bucketForPreferred[$index] = $view;
@@ -422,28 +624,6 @@ class ChoiceList implements ChoiceListInterface
     protected function createIndex($choice)
     {
         return count($this->choices);
-    }
-
-    /**
-     * Creates a new unique value for this choice.
-     *
-     * By default, an integer is generated since it cannot be guaranteed that
-     * all values in the list are convertible to (unique) strings. Subclasses
-     * can override this behaviour if they can guarantee this property.
-     *
-     * @param mixed $choice The choice to create a value for
-     *
-     * @return string A unique string.
-     */
-    protected function createValue($choice)
-    {
-        if ($this->choicesAsValues) {
-            // Choices are guaranteed to be unique and scalar, so we can simply
-            // convert them to strings
-            return (string) $choice;
-        }
-
-        return (string) count($this->values);
     }
 
     /**
@@ -574,5 +754,76 @@ class ChoiceList implements ChoiceListInterface
         }
 
         return true;
+    }
+
+    /**
+     * Checks whether all of the choices are objects.
+     *
+     * @param  array $choices  The choices to check.
+     *
+     * @return Boolean  Whether all of the choices are objects.
+     */
+    protected function testObjectsOnly(array $choices)
+    {
+        foreach ($choices as $choice) {
+            // Support for choice groups
+            if (is_array($choice)) {
+                if (!$this->testObjectsOnly($choice)) {
+                    return false;
+                }
+
+                // Go to next choice (group)
+                continue;
+            }
+
+            if (!is_object($choice)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Recursive implementation of array_map().
+     *
+     * @param  array $array        The input array.
+     * @param  callable $callable  The callable to apply onto each element.
+     *
+     * @return array  The array with the results of the function calls.
+     */
+    private static function arrayMapRecursive(array $array, $callable)
+    {
+        $result = array();
+
+        foreach ($array as $key => $value) {
+            $result[$key] = is_array($value)
+                ? self::arrayMapRecursive($value, $callable)
+                : call_user_func($callable, $value);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Recursive implementation of array_filter().
+     *
+     * @param  array $array        The array to filter.
+     * @param  callable $callable  The callable deciding whether to accept an
+     *                             element of the input array.
+     *
+     * @return array  The filtered array.
+     */
+    private static function arrayFilterRecursive(array $array, $callable, array &$result = array())
+    {
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                self::arrayFilterRecursive($value, $callable, $result);
+            } elseif (call_user_func($callable, $value)) {
+                $result[] = $value;
+            }
+        }
+
+        return $result;
     }
 }

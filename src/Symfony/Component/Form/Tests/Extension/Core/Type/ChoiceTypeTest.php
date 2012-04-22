@@ -12,8 +12,6 @@
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
 use Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceList;
-
-use Symfony\Component\Form\Extension\Core\ChoiceList\ObjectChoiceList;
 use Symfony\Component\Form\Extension\Core\View\ChoiceView;
 
 class ChoiceTypeTest extends TypeTestCase
@@ -76,6 +74,17 @@ class ChoiceTypeTest extends TypeTestCase
     {
         $form = $this->factory->create('choice', null, array(
             'choices' => new \ArrayObject(),
+        ));
+    }
+
+    /**
+     * @expectedException Symfony\Component\Form\Exception\FormException
+     */
+    public function testChoiceLabelsOptionExpectsArrayOrCallable()
+    {
+        $form = $this->factory->create('choice', null, array(
+            'choices' => array(),
+            'choice_labels' => 'foo',
         ));
     }
 
@@ -188,15 +197,9 @@ class ChoiceTypeTest extends TypeTestCase
         $form = $this->factory->create('choice', null, array(
             'multiple' => false,
             'expanded' => false,
-            'choice_list' => new ObjectChoiceList(
-                $this->objectChoices,
-                // label path
-                'name',
-                array(),
-                null,
-                // value path
-                'id'
-            ),
+            'choices' => $this->objectChoices,
+            'choice_labels' => 'name',
+            'choice_values' => 'id'
         ));
 
         // "id" value of the second entry
@@ -225,15 +228,9 @@ class ChoiceTypeTest extends TypeTestCase
         $form = $this->factory->create('choice', null, array(
             'multiple' => true,
             'expanded' => false,
-            'choice_list' => new ObjectChoiceList(
-                $this->objectChoices,
-                // label path
-                'name',
-                array(),
-                null,
-                // value path
-                'id'
-            ),
+            'choices' => $this->objectChoices,
+            'choice_labels' => 'name',
+            'choice_values' => 'id'
         ));
 
         $form->bind(array('2', '3'));
@@ -327,15 +324,9 @@ class ChoiceTypeTest extends TypeTestCase
         $form = $this->factory->create('choice', null, array(
             'multiple' => false,
             'expanded' => true,
-            'choice_list' => new ObjectChoiceList(
-                $this->objectChoices,
-                // label path
-                'name',
-                array(),
-                null,
-                // value path
-                'id'
-            ),
+            'choices' => $this->objectChoices,
+            'choice_labels' => 'name',
+            'choice_values' => 'id'
         ));
 
         $form->bind('2');
@@ -450,15 +441,9 @@ class ChoiceTypeTest extends TypeTestCase
         $form = $this->factory->create('choice', null, array(
             'multiple' => true,
             'expanded' => true,
-            'choice_list' => new ObjectChoiceList(
-                $this->objectChoices,
-                // label path
-                'name',
-                array(),
-                null,
-                // value path
-                'id'
-            ),
+            'choices' => $this->objectChoices,
+            'choice_labels' => 'name',
+            'choice_values' => 'id',
         ));
 
         $form->bind(array('1', '2'));
@@ -508,10 +493,17 @@ class ChoiceTypeTest extends TypeTestCase
         $form = $this->factory->create('choice', null, array(
             'multiple' => false,
             'expanded' => false,
-            'choices' => $this->numericChoices,
+            'choices' => array(false, true),
+            'choice_labels' => array('No', 'Yes'),
+            'choice_values' => array('0', '1'),
         ));
 
         $form->setData(false);
+
+        $this->assertFalse($form->getData());
+        $this->assertEquals('0', $form->getClientData());
+
+        $form->bind('0');
 
         $this->assertFalse($form->getData());
         $this->assertEquals('0', $form->getClientData());
@@ -522,10 +514,17 @@ class ChoiceTypeTest extends TypeTestCase
         $form = $this->factory->create('choice', null, array(
             'multiple' => true,
             'expanded' => false,
-            'choices' => $this->numericChoices,
+            'choices' => array(false, true),
+            'choice_labels' => array('No', 'Yes'),
+            'choice_values' => array('0', '1'),
         ));
 
         $form->setData(array(false, true));
+
+        $this->assertEquals(array(false, true), $form->getData());
+        $this->assertEquals(array('0', '1'), $form->getClientData());
+
+        $form->bind(array('0', '1'));
 
         $this->assertEquals(array(false, true), $form->getData());
         $this->assertEquals(array('0', '1'), $form->getClientData());

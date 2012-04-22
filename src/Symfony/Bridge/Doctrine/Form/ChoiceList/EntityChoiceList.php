@@ -13,7 +13,7 @@ namespace Symfony\Bridge\Doctrine\Form\ChoiceList;
 
 use Symfony\Component\Form\Exception\FormException;
 use Symfony\Component\Form\Exception\StringCastException;
-use Symfony\Component\Form\Extension\Core\ChoiceList\ObjectChoiceList;
+use Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceList;
 use Doctrine\Common\Persistence\ObjectManager;
 
 /**
@@ -21,7 +21,7 @@ use Doctrine\Common\Persistence\ObjectManager;
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class EntityChoiceList extends ObjectChoiceList
+class EntityChoiceList extends ChoiceList
 {
     /**
      * @var ObjectManager
@@ -69,6 +69,14 @@ class EntityChoiceList extends ObjectChoiceList
      */
     private $idAsValue = false;
 
+    private $preferredChoices;
+
+    private $labels;
+
+    private $values;
+
+    private $groupBy;
+
     /**
      * Whether the entities have already been loaded.
      *
@@ -81,14 +89,14 @@ class EntityChoiceList extends ObjectChoiceList
      *
      * @param ObjectManager         $manager      An EntityManager instance
      * @param string                $class        The class name
-     * @param string                $labelPath    The property path used for the label
+     * @param string                $labels    The property path used for the label
      * @param EntityLoaderInterface $entityLoader An optional query builder
      * @param array                 $entities     An array of choices
-     * @param string                $groupPath    A property path pointing to the property used
+     * @param string                $groupBy    A property path pointing to the property used
      *                                            to group the choices. Only allowed if
      *                                            the choices are given as flat array.
      */
-    public function __construct(ObjectManager $manager, $class, $labelPath = null, EntityLoaderInterface $entityLoader = null, $entities = null, $groupPath = null)
+    public function __construct(ObjectManager $manager, $class, $labels = null, EntityLoaderInterface $entityLoader = null, $entities = null, $groupBy = null, $preferredChoices = array())
     {
         $this->em = $manager;
         $this->entityLoader = $entityLoader;
@@ -97,6 +105,7 @@ class EntityChoiceList extends ObjectChoiceList
         $this->loaded = is_array($entities) || $entities instanceof \Traversable;
 
         $identifier = $this->classMetadata->getIdentifierFieldNames();
+        $values = null;
 
         if (1 === count($identifier)) {
             $this->idField = $identifier[0];
@@ -105,15 +114,30 @@ class EntityChoiceList extends ObjectChoiceList
             if ('integer' === $this->classMetadata->getTypeOfField($this->idField)) {
                 $this->idAsIndex = true;
             }
+
+            $that = $this;
+            $values = function ($choice) use ($that) {
+                return (string) current($that->getIdentifierValues($choice));
+            };
         }
 
         if (!$this->loaded) {
+            // Store settings until loading
+            $this->preferredChoices = $preferredChoices;
+            $this->labels = $labels;
+            $this->values = $values;
+            $this->groupBy = $groupBy;
+
             // Make sure the constraints of the parent constructor are
             // fulfilled
             $entities = array();
+            $preferredChoices = array();
+            $labels = null;
+            $values = null;
+            $groupBy = null;
         }
 
-        parent::__construct($entities, $labelPath, array(), $groupPath);
+        parent::__construct($entities, $preferredChoices, $labels, $values, $groupBy);
     }
 
     /**
@@ -327,26 +351,6 @@ class EntityChoiceList extends ObjectChoiceList
     }
 
     /**
-     * Creates a new unique value for this entity.
-     *
-     * If the entity has a single-field identifier, this identifier is used.
-     *
-     * Otherwise a new integer is generated.
-     *
-     * @param mixed $choice The choice to create a value for
-     *
-     * @return integer|string A unique value without character limitations.
-     */
-    protected function createValue($entity)
-    {
-        if ($this->idAsValue) {
-            return (string) current($this->getIdentifierValues($entity));
-        }
-
-        return parent::createValue($entity);
-    }
-
-    /**
      * Loads the list with entities.
      */
     private function load()
@@ -357,13 +361,7 @@ class EntityChoiceList extends ObjectChoiceList
             $entities = $this->em->getRepository($this->class)->findAll();
         }
 
-        try {
-            // The second parameter $labels is ignored by ObjectChoiceList
-            // The third parameter $preferredChoices is currently not supported
-            parent::initialize($entities, array(), array());
-        } catch (StringCastException $e) {
-            throw new StringCastException(str_replace('argument $labelPath', 'option "property"', $e->getMessage()), null, $e);
-        }
+        parent::initialize($entities, $this->preferredChoices, $this->labels, $this->values, $this->groupBy);
 
         $this->loaded = true;
     }
@@ -381,7 +379,7 @@ class EntityChoiceList extends ObjectChoiceList
      *
      * @throws FormException  If the entity does not exist in Doctrine's identity map
      */
-    private function getIdentifierValues($entity)
+    public function getIdentifierValues($entity)
     {
         if (!$this->em->contains($entity)) {
             throw new FormException('Entities passed to the choice field must be managed');

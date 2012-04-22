@@ -44,53 +44,9 @@ class SimpleChoiceList extends ChoiceList
      * @param array   $preferredChoices A flat array of choices that should be
      *                                  presented to the user with priority.
      */
-    public function __construct(array $choices, array $preferredChoices = array())
+    public function __construct(array $choices, array $preferredChoices = array(), $values = null, $groupBy = null)
     {
-        parent::__construct($choices, $choices, $preferredChoices);
-    }
-
-    /**
-     * Recursively adds the given choices to the list.
-     *
-     * Takes care of splitting the single $choices array passed in the
-     * constructor into choices and labels.
-     *
-     * @param array $bucketForPreferred
-     * @param array $bucketForRemaining
-     * @param array $choices
-     * @param array $labels
-     * @param array $preferredChoices
-     *
-     * @throws UnexpectedTypeException
-     *
-     * @see parent::addChoices
-     */
-    protected function addChoices(&$bucketForPreferred, &$bucketForRemaining, $choices, $labels, array $preferredChoices)
-    {
-        // Add choices to the nested buckets
-        foreach ($choices as $choice => $label) {
-            if (is_array($label)) {
-                // Don't do the work if the array is empty
-                if (count($label) > 0) {
-                    $this->addChoiceGroup(
-                        $choice,
-                        $bucketForPreferred,
-                        $bucketForRemaining,
-                        $label,
-                        $label,
-                        $preferredChoices
-                    );
-                }
-            } else {
-                $this->addChoice(
-                    $bucketForPreferred,
-                    $bucketForRemaining,
-                    $choice,
-                    $label,
-                    $preferredChoices
-                );
-            }
-        }
+        parent::__construct(self::extractChoices($choices), $preferredChoices, $choices, $values, $groupBy);
     }
 
     /**
@@ -120,5 +76,18 @@ class SimpleChoiceList extends ChoiceList
     {
         // We know this already, since choices are passed as array keys
         return true;
+    }
+
+    private static function extractChoices(array $array)
+    {
+        $result = array();
+
+        foreach ($array as $key => $value) {
+            $result[$key] = is_array($value)
+                ? self::extractChoices($value)
+                : $key;
+        }
+
+        return $result;
     }
 }
