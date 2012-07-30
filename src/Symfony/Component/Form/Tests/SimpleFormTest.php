@@ -353,44 +353,56 @@ class SimpleFormTest extends AbstractFormTest
 
     /*
      * When there is no data transformer, the data must have the same format
-     * in all three representations
+     * in all three representations. It should not be changed to string,
+     * because other tools such as JSON converts could read the data that
+     * expect the data type to remain untouched. The conversion to string
+     * happens only in the view layer now.
+     *
+     * https://github.com/simplethings/SimpleThingsFormSerializerBundle/issues/26
      */
-    public function testSetDataConvertsScalarToStringIfNoTransformer()
+    public function testSetDataDoesNotConvertScalarToStringIfNoTransformer()
     {
         $form = $this->getBuilder()->getForm();
 
         $form->setData(1);
 
-        $this->assertSame('1', $form->getData());
-        $this->assertSame('1', $form->getNormData());
-        $this->assertSame('1', $form->getViewData());
+        $this->assertSame(1, $form->getData());
+        $this->assertSame(1, $form->getNormData());
+        $this->assertSame(1, $form->getViewData());
     }
 
     /*
-     * Data in client format should, if possible, always be a string to
-     * facilitate differentiation between '0' and ''
+     * @see testSetDataDoesNotConvertScalarToStringIfNoTransformer()
+     *
+     * https://github.com/simplethings/SimpleThingsFormSerializerBundle/issues/26
      */
-    public function testSetDataConvertsScalarToStringIfOnlyModelTransformer()
+    public function testSetDataDoesNotConvertScalarToStringIfOnlyModelTransformer()
     {
         $form = $this->getBuilder()
             ->addModelTransformer(new FixedDataTransformer(array(
-            '' => '',
-            1 => 23,
-        )))
+                '' => '',
+                1 => 23,
+            )))
             ->getForm();
 
         $form->setData(1);
 
         $this->assertSame(1, $form->getData());
         $this->assertSame(23, $form->getNormData());
-        $this->assertSame('23', $form->getViewData());
+        $this->assertSame(23, $form->getViewData());
     }
 
     /*
-     * NULL remains NULL in app and norm format to remove the need to treat
-     * empty values and NULL explicitly in the application
+     * NULL remains NULL by default. It is not necessary to change
+     * it to a string because we always use strict comparisons, so
+     * the old problems with successfully comparing '' and 0 cannot
+     * occur anymore. Furthermore, casting data to strings automatically
+     * prevents other readers, such as JSON serializers, from outputting
+     * the original data type.
+     *
+     * https://github.com/simplethings/SimpleThingsFormSerializerBundle/issues/26
      */
-    public function testSetDataConvertsNullToStringIfNoTransformer()
+    public function testSetDataDoesNotChangeNullToStringIfNoTransformer()
     {
         $form = $this->getBuilder()->getForm();
 
@@ -398,7 +410,7 @@ class SimpleFormTest extends AbstractFormTest
 
         $this->assertNull($form->getData());
         $this->assertNull($form->getNormData());
-        $this->assertSame('', $form->getViewData());
+        $this->assertNull($form->getViewData());
     }
 
     public function testSetDataIsIgnoredIfDataIsLocked()
@@ -413,6 +425,25 @@ class SimpleFormTest extends AbstractFormTest
         $this->assertSame('default', $form->getData());
     }
 
+    /**
+     * The data must have the same format in all three representations.
+     * A resulting issue is that a form may contain a different data
+     * type before and after binding, e.g.:
+     *
+     * <code>
+     * $form->setData(0); // $form->getData() === 0
+     * $form->bind('0'); // $form->getData() === '0'
+     * </code>
+     *
+     * This cannot be prevented though, since bind() always receives
+     * data as strings. If you want a form to process anything else but
+     * string data, you should add a transformer to circumvent this
+     * problem.
+     *
+     * The data is always converted to a string in the view layer.
+     *
+     * https://github.com/simplethings/SimpleThingsFormSerializerBundle/issues/26
+     */
     public function testBindConvertsEmptyToNullIfNoTransformer()
     {
         $form = $this->getBuilder()->getForm();
@@ -421,7 +452,7 @@ class SimpleFormTest extends AbstractFormTest
 
         $this->assertNull($form->getData());
         $this->assertNull($form->getNormData());
-        $this->assertSame('', $form->getViewData());
+        $this->assertNull($form->getViewData());
     }
 
     public function testBindExecutesTransformationChain()

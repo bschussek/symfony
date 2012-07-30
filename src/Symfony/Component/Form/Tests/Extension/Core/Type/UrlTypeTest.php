@@ -44,7 +44,7 @@ class UrlTypeTest extends LocalizedTestCase
         $form->bind('');
 
         $this->assertNull($form->getData());
-        $this->assertSame('', $form->getViewData());
+        $this->assertNull($form->getViewData());
     }
 
     public function testSubmitAddsNoDefaultProtocolIfSetToNull()

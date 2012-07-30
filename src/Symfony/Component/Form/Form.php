@@ -381,7 +381,7 @@ class Form implements \IteratorAggregate, FormInterface
 
         // Treat data as strings unless a value transformer exists
         if (!$this->config->getViewTransformers() && !$this->config->getModelTransformers() && is_scalar($modelData)) {
-            $modelData = (string) $modelData;
+            //$modelData = (string) $modelData;
         }
 
         // Synchronize representations - must not change the content!
@@ -1081,15 +1081,6 @@ class Form implements \IteratorAggregate, FormInterface
      */
     private function normToView($value)
     {
-        // Scalar values should  be converted to strings to
-        // facilitate differentiation between empty ("") and zero (0).
-        // Only do this for simple forms, as the resulting value in
-        // compound forms is passed to the data mapper and thus should
-        // not be converted to a string before.
-        if (!$this->config->getViewTransformers() && !$this->config->getCompound()) {
-            return null === $value || is_scalar($value) ? (string) $value : $value;
-        }
-
         foreach ($this->config->getViewTransformers() as $transformer) {
             $value = $transformer->transform($value);
         }

@@ -105,6 +105,8 @@ class FormType extends AbstractType
             $translationDomain = 'messages';
         }
 
+        $value = $form->getViewData();
+
         $view->vars = array_replace($view->vars, array(
             'form'                => $view,
             'id'                  => $id,
@@ -113,7 +115,7 @@ class FormType extends AbstractType
             'read_only'           => $readOnly,
             'errors'              => $form->getErrors(),
             'valid'               => $form->isBound() ? $form->isValid() : true,
-            'value'               => $form->getViewData(),
+            'value'               => null === $value || is_scalar($value) ? (string) $value : $value,
             'data'                => $form->getNormData(),
             'disabled'            => $form->isDisabled(),
             'required'            => $form->isRequired(),

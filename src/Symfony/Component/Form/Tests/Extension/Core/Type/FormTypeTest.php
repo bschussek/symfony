@@ -386,8 +386,9 @@ class FormTypeTest extends TypeTestCase
 
         $this->assertFalse($form->isEmpty());
 
+        $this->assertSame($data, $form->getData());
+        $this->assertSame($data, $form->getViewData());
         $this->assertSame($dataAsString, $view->vars['value']);
-        $this->assertSame($dataAsString, $form->getData());
     }
 
     /**
