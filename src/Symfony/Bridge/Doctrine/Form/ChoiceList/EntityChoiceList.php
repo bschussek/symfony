@@ -70,6 +70,13 @@ class EntityChoiceList extends ObjectChoiceList
     private $idAsValue = false;
 
     /**
+     * The data type of the ID field.
+     *
+     * @var string
+     */
+    private $idType;
+
+    /**
      * Whether the entities have already been loaded.
      *
      * @var Boolean
@@ -110,8 +117,9 @@ class EntityChoiceList extends ObjectChoiceList
         if (1 === count($identifier)) {
             $this->idField = $identifier[0];
             $this->idAsValue = true;
+            $this->idType = $this->classMetadata->getTypeOfField($this->idField);
 
-            if ('integer' === $this->classMetadata->getTypeOfField($this->idField)) {
+            if ('integer' === $this->idType) {
                 $this->idAsIndex = true;
             }
         }
@@ -208,6 +216,19 @@ class EntityChoiceList extends ObjectChoiceList
             if ($this->idAsValue && $this->entityLoader) {
                 if (empty($values)) {
                     return array();
+                }
+
+                // Make sure the values passed to the entity loader have the
+                // right type and don't contain invalid values.
+                // This is necessary to prevent problems with certain DBMS
+                // vendors.
+                // see https://github.com/symfony/symfony/issues/7156
+                if ('integer' === $this->idType) {
+                    $values = array_map('intval', array_filter($values, function ($value) {
+                        return (string) $value === (string) (int) $value;
+                    }));
+                } else {
+                    $values = array_map('strval', $values);
                 }
 
                 return $this->entityLoader->getEntitiesByIds($this->idField, $values);

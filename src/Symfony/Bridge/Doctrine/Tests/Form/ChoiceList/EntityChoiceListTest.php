@@ -70,7 +70,7 @@ class EntityChoiceListTest extends DoctrineOrmTestCase
     }
 
     /**
-     * @expectedException Symfony\Component\Form\Exception\FormException
+     * @expectedException \Symfony\Component\Form\Exception\FormException
      * @expectedMessage   Entity "Symfony\Bridge\Doctrine\Tests\Fixtures\SingleIdentEntity" passed to the choice field must have a "__toString()" method defined (or you can also override the "property" option).
      */
     public function testEntitesMustHaveAToStringMethod()
@@ -97,7 +97,7 @@ class EntityChoiceListTest extends DoctrineOrmTestCase
     }
 
     /**
-     * @expectedException Symfony\Component\Form\Exception\FormException
+     * @expectedException \Symfony\Component\Form\Exception\FormException
      */
     public function testChoicesMustBeManaged()
     {
@@ -281,13 +281,9 @@ class EntityChoiceListTest extends DoctrineOrmTestCase
     // Ticket #3446
     public function testGetEmptyArrayChoicesForEmptyValues()
     {
-        $qb = $this->em->createQueryBuilder()->select('s')->from(self::SINGLE_IDENT_CLASS, 's');
-        $entityLoader = new ORMQueryBuilderLoader($qb);
         $choiceList = new EntityChoiceList(
             $this->em,
-            self::SINGLE_IDENT_CLASS,
-            null,
-            $entityLoader
+            self::SINGLE_IDENT_CLASS
         );
 
         $this->assertEquals(array(), $choiceList->getChoicesForValues(array()));
@@ -354,5 +350,43 @@ class EntityChoiceListTest extends DoctrineOrmTestCase
 
         $this->assertSame(array('_1', 1), $choiceList->getIndicesForChoices(array($entity1, $entity2)));
         $this->assertSame(array('_1', 1), $choiceList->getIndicesForValues(array('-1', '1')));
+    }
+
+    // https://github.com/symfony/symfony/issues/7156
+    public function testGetChoicesForValuesConvertsValuesToInt()
+    {
+        $entityLoader = $this->getMock('Symfony\Bridge\Doctrine\Form\ChoiceList\EntityLoaderInterface');
+        $entityLoader->expects($this->once())
+            ->method('getEntitiesByIds')
+            ->with('id', $this->identicalTo(array(0 => 1, 2 => 2)))
+            ->will($this->returnValue('RESULT'));
+
+        $choiceList = new EntityChoiceList(
+            $this->em,
+            self::SINGLE_IDENT_CLASS,
+            null,
+            $entityLoader
+        );
+
+        $this->assertSame('RESULT', $choiceList->getChoicesForValues(array('1', 'foo', 2)));
+    }
+
+    // https://github.com/symfony/symfony/issues/7156
+    public function testGetChoicesForValuesConvertsValuesToString()
+    {
+        $entityLoader = $this->getMock('Symfony\Bridge\Doctrine\Form\ChoiceList\EntityLoaderInterface');
+        $entityLoader->expects($this->once())
+            ->method('getEntitiesByIds')
+            ->with('id', $this->identicalTo(array('1', 'foo', '2')))
+            ->will($this->returnValue('RESULT'));
+
+        $choiceList = new EntityChoiceList(
+            $this->em,
+            self::SINGLE_STRING_IDENT_CLASS,
+            null,
+            $entityLoader
+        );
+
+        $this->assertSame('RESULT', $choiceList->getChoicesForValues(array(1, 'foo', '2')));
     }
 }
