@@ -12,6 +12,7 @@
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
 use Symfony\Component\Form\Extension\Core\View\ChoiceView;
+use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\Form\Test\TypeTestCase as TestCase;
 use Symfony\Component\Intl\Util\IntlTestHelper;
 
@@ -39,10 +40,20 @@ class LanguageTypeTest extends TestCase
 
     public function testMultipleLanguagesIsNotIncluded()
     {
-        $form = $this->factory->create('language', 'language');
+        $form = $this->factory->create('language');
         $view = $form->createView();
         $choices = $view->vars['choices'];
 
         $this->assertNotContains(new ChoiceView('mul', 'mul', 'Mehrsprachig'), $choices, '', false, false);
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('language');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

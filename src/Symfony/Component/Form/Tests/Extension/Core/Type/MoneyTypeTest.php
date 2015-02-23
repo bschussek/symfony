@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
+use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\Form\Test\TypeTestCase as TestCase;
 use Symfony\Component\Intl\Util\IntlTestHelper;
 
@@ -56,5 +57,15 @@ class MoneyTypeTest extends TestCase
 
         $this->assertSame('{{ widget }} £', $view1->vars['money_pattern']);
         $this->assertSame('{{ widget }} €', $view2->vars['money_pattern']);
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('money');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

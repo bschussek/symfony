@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
+use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\Form\Test\TypeTestCase as TestCase;
 use Symfony\Component\Intl\Util\IntlTestHelper;
 
@@ -31,5 +32,15 @@ class IntegerTypeTest extends TestCase
 
         $this->assertSame(1, $form->getData());
         $this->assertSame('1', $form->getViewData());
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('integer');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

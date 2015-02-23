@@ -13,6 +13,7 @@ namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
 use Symfony\Component\Form\Extension\Core\View\ChoiceView;
 use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\Form\Test\TypeTestCase as TestCase;
 use Symfony\Component\Intl\Util\IntlTestHelper;
 
@@ -703,5 +704,63 @@ class TimeTypeTest extends TestCase
         $this->factory->create('time', null, array(
             'seconds' => 'bad value',
         ));
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('time');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
+    }
+
+    public function testSerializeSingleText()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('time', null, array(
+            'widget' => 'single_text'
+        ));
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
+    }
+
+    public function testSerializeStringInput()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('time', null, array(
+            'input' => 'string',
+        ));
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
+    }
+
+    public function testSerializeTimestampInput()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('time', null, array(
+            'input' => 'timestamp',
+        ));
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
+    }
+
+    public function testSerializeArrayInput()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('time', null, array(
+            'input' => 'array',
+        ));
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

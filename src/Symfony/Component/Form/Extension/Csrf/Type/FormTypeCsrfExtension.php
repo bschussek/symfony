@@ -18,6 +18,8 @@ use Symfony\Component\Form\Extension\Csrf\CsrfProvider\CsrfProviderInterface;
 use Symfony\Component\Form\Extension\Csrf\CsrfProvider\CsrfTokenManagerAdapter;
 use Symfony\Component\Form\Extension\Csrf\EventListener\CsrfValidationListener;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormConfigBuilderInterface;
+use Symfony\Component\Form\Serializer\SerializationListenerInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\Options;
@@ -28,7 +30,7 @@ use Symfony\Component\Translation\TranslatorInterface;
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class FormTypeCsrfExtension extends AbstractTypeExtension
+class FormTypeCsrfExtension extends AbstractTypeExtension implements SerializationListenerInterface
 {
     /**
      * @var CsrfTokenManagerInterface
@@ -82,16 +84,7 @@ class FormTypeCsrfExtension extends AbstractTypeExtension
             return;
         }
 
-        $builder
-            ->addEventSubscriber(new CsrfValidationListener(
-                $options['csrf_field_name'],
-                $options['csrf_token_manager'],
-                $options['csrf_token_id'] ?: ($builder->getName() ?: get_class($builder->getType()->getInnerType())),
-                $options['csrf_message'],
-                $this->translator,
-                $this->translationDomain
-            ))
-        ;
+        $this->addEventSubscriber($builder, $options);
     }
 
     /**
@@ -151,8 +144,36 @@ class FormTypeCsrfExtension extends AbstractTypeExtension
     /**
      * {@inheritdoc}
      */
+    public function postUnserialize(FormConfigBuilderInterface $config)
+    {
+        if (!$config->getOption('csrf_protection')) {
+            return;
+        }
+
+        $this->addEventSubscriber($config, $config->getOptions());
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getExtendedType()
     {
         return 'form';
+    }
+
+    private function addEventSubscriber(FormConfigBuilderInterface $builder, array $options)
+    {
+        $builder
+            ->addEventSubscriber(new CsrfValidationListener(
+                $options['csrf_field_name'],
+                $options['csrf_token_manager'],
+                $options['csrf_token_id']
+                    ?: ($builder->getName()
+                    ?: get_class($builder->getType()->getInnerType())),
+                $options['csrf_message'],
+                $this->translator,
+                $this->translationDomain
+            ))
+        ;
     }
 }

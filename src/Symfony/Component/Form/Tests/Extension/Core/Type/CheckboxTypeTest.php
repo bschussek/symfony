@@ -12,6 +12,7 @@
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
 use Symfony\Component\Form\CallbackTransformer;
+use Symfony\Component\Form\Serializer\FormSerializer;
 
 class CheckboxTypeTest extends \Symfony\Component\Form\Test\TypeTestCase
 {
@@ -161,6 +162,16 @@ class CheckboxTypeTest extends \Symfony\Component\Form\Test\TypeTestCase
         $this->assertSame($data, $form->getData());
         $this->assertSame($checked, $form->getNormData());
         $this->assertEquals($checked, $view->vars['checked']);
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('birthday');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 
     public function provideCustomModelTransformerData()

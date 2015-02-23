@@ -32,6 +32,16 @@ class FormFactory implements FormFactoryInterface
     }
 
     /**
+     * Returns the form type registry.
+     *
+     * @return FormRegistryInterface The form type registry.
+     */
+    public function getRegistry()
+    {
+        return $this->registry;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function create($type = 'form', $data = null, array $options = array())

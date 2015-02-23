@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
+use Symfony\Component\Form\Serializer\FormSerializer;
+
 class RepeatedTypeTest extends \Symfony\Component\Form\Test\TypeTestCase
 {
     protected $form;
@@ -178,5 +180,17 @@ class RepeatedTypeTest extends \Symfony\Component\Form\Test\TypeTestCase
         $this->assertTrue($this->form->isSynchronized());
         $this->assertEquals($input, $this->form->getViewData());
         $this->assertEquals('foo', $this->form->getData());
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('repeated', null, array(
+            'type' => 'text',
+        ));
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

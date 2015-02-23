@@ -14,6 +14,9 @@ namespace Symfony\Component\Form;
 use Symfony\Component\Form\Exception\InvalidArgumentException;
 use Symfony\Component\Form\Exception\UnexpectedTypeException;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Form\Serializer\SerializableConfigInterface;
+use Symfony\Component\Form\Serializer\SerializableInterface;
+use Symfony\Component\Form\Serializer\SerializationListenerInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -21,7 +24,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class ResolvedFormType implements ResolvedFormTypeInterface
+class ResolvedFormType implements ResolvedFormTypeInterface, SerializationListenerInterface
 {
     /**
      * @var FormTypeInterface
@@ -186,6 +189,26 @@ class ResolvedFormType implements ResolvedFormTypeInterface
         foreach ($this->typeExtensions as $extension) {
             /* @var FormTypeExtensionInterface $extension */
             $extension->finishView($view, $form, $options);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function postUnserialize(FormConfigBuilderInterface $config)
+    {
+        if ($this->parent instanceof SerializationListenerInterface) {
+            $this->parent->postUnserialize($config);
+        }
+
+        if ($this->innerType instanceof SerializationListenerInterface) {
+            $this->innerType->postUnserialize($config);
+        }
+
+        foreach ($this->typeExtensions as $extension) {
+            if ($extension instanceof SerializationListenerInterface) {
+                $extension->postUnserialize($config);
+            }
         }
     }
 

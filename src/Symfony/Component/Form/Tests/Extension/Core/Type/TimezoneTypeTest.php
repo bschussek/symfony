@@ -12,6 +12,7 @@
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
 use Symfony\Component\Form\Extension\Core\View\ChoiceView;
+use Symfony\Component\Form\Serializer\FormSerializer;
 
 class TimezoneTypeTest extends \Symfony\Component\Form\Test\TypeTestCase
 {
@@ -26,5 +27,15 @@ class TimezoneTypeTest extends \Symfony\Component\Form\Test\TypeTestCase
 
         $this->assertArrayHasKey('America', $choices);
         $this->assertContains(new ChoiceView('America/New_York', 'America/New_York', 'New York'), $choices['America'], '', false, false);
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('timezone');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

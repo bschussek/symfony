@@ -20,6 +20,11 @@ use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
 class CheckboxType extends AbstractType
 {
+    public static function getEmptyData(FormInterface $form, $viewData)
+    {
+        return $viewData;
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -51,13 +56,9 @@ class CheckboxType extends AbstractType
      */
     public function setDefaultOptions(OptionsResolverInterface $resolver)
     {
-        $emptyData = function (FormInterface $form, $viewData) {
-            return $viewData;
-        };
-
         $resolver->setDefaults(array(
             'value' => '1',
-            'empty_data' => $emptyData,
+            'empty_data' => array(__CLASS__, 'getEmptyData'),
             'compound' => false,
         ));
     }

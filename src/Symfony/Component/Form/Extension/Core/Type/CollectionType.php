@@ -13,13 +13,16 @@ namespace Symfony\Component\Form\Extension\Core\Type;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormConfigBuilderInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\Extension\Core\EventListener\ResizeFormListener;
+use Symfony\Component\Form\Serializer\SerializableConfigInterface;
+use Symfony\Component\Form\Serializer\SerializationListenerInterface;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
-class CollectionType extends AbstractType
+class CollectionType extends AbstractType implements SerializationListenerInterface
 {
     /**
      * {@inheritdoc}
@@ -33,15 +36,7 @@ class CollectionType extends AbstractType
             $builder->setAttribute('prototype', $prototype->getForm());
         }
 
-        $resizeListener = new ResizeFormListener(
-            $options['type'],
-            $options['options'],
-            $options['allow_add'],
-            $options['allow_delete'],
-            $options['delete_empty']
-        );
-
-        $builder->addEventSubscriber($resizeListener);
+        $this->addResizeListener($builder, $options);
     }
 
     /**
@@ -98,8 +93,31 @@ class CollectionType extends AbstractType
     /**
      * {@inheritdoc}
      */
+    public function postUnserialize(FormConfigBuilderInterface $config)
+    {
+        // The ResizeFormListener cannot be serialized since it has
+        // listeners with priorities, which are not supported by
+        // FormSerializer since EventDispatcherInterface provides no access
+        // to the priorities
+        $this->addResizeListener($config, $config->getOptions());
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getName()
     {
         return 'collection';
+    }
+
+    private function addResizeListener(FormConfigBuilderInterface $builder, array $options)
+    {
+        $builder->addEventSubscriber(new ResizeFormListener(
+            $options['type'],
+            $options['options'],
+            $options['allow_add'],
+            $options['allow_delete'],
+            $options['delete_empty']
+        ));
     }
 }

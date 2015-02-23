@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
+use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\PropertyAccess\PropertyPath;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Tests\Fixtures\Author;
@@ -649,6 +650,16 @@ class FormTypeTest extends BaseTypeTest
 
         //This method should not throw a Fatal Error Exception.
         $form->getErrorsAsString();
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('form');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 
     protected function getTestedType()

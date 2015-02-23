@@ -13,6 +13,7 @@ namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Transforms between a Boolean and a string.
@@ -20,7 +21,7 @@ use Symfony\Component\Form\Exception\TransformationFailedException;
  * @author Bernhard Schussek <bschussek@gmail.com>
  * @author Florian Eckerstorfer <florian@eckerstorfer.org>
  */
-class BooleanToStringTransformer implements DataTransformerInterface
+class BooleanToStringTransformer implements DataTransformerInterface, SerializableInterface
 {
     /**
      * The value emitted upon transform if the input is true.

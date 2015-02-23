@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Validator\Type;
 
+use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\Form\Test\FormInterface;
 
 /**
@@ -68,6 +69,16 @@ abstract class BaseValidatorExtensionTest extends TypeTestCase
         ));
 
         $this->assertTrue(is_callable($form->getConfig()->getOption('validation_groups')));
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->createForm();
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 
     abstract protected function createForm(array $options = array());

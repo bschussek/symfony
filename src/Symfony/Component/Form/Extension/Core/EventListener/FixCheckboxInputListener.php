@@ -16,6 +16,7 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceListInterface;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Takes care of converting the input from a list of checkboxes to a correctly
@@ -23,7 +24,7 @@ use Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceListInterface;
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class FixCheckboxInputListener implements EventSubscriberInterface
+class FixCheckboxInputListener implements EventSubscriberInterface, SerializableInterface
 {
     private $choiceList;
 

@@ -14,19 +14,15 @@ namespace Symfony\Component\Form;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Form\Exception\InvalidArgumentException;
 use Symfony\Component\Form\Exception\BadMethodCallException;
+use Symfony\Component\Form\Serializer\SerializableConfigInterface;
 
 /**
  * A builder for {@link Button} instances.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class ButtonBuilder implements \IteratorAggregate, FormBuilderInterface
+class ButtonBuilder implements \IteratorAggregate, \Serializable, SerializableConfigInterface, FormBuilderInterface
 {
-    /**
-     * @var bool
-     */
-    protected $locked = false;
-
     /**
      * @var bool
      */
@@ -51,6 +47,14 @@ class ButtonBuilder implements \IteratorAggregate, FormBuilderInterface
      * @var array
      */
     private $options;
+
+    /**
+     * Stores the name of the form type between unserialize() and
+     * postUnserialize().
+     *
+     * @var string
+     */
+    private $serializedTypeName;
 
     /**
      * Creates a new button builder.
@@ -539,10 +543,7 @@ class ButtonBuilder implements \IteratorAggregate, FormBuilderInterface
     public function getFormConfig()
     {
         // This method should be idempotent, so clone the builder
-        $config = clone $this;
-        $config->locked = true;
-
-        return $config;
+        return clone $this;
     }
 
     /**
@@ -844,5 +845,42 @@ class ButtonBuilder implements \IteratorAggregate, FormBuilderInterface
     public function getIterator()
     {
         return new \EmptyIterator();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function serialize()
+    {
+        return serialize(array(
+            $this->name,
+            $this->type->getName(),
+            $this->disabled,
+            $this->disabled,
+            $this->options,
+        ));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function unserialize($serialized)
+    {
+        list(
+            $this->name,
+            $this->serializedTypeName,
+            $this->disabled,
+            $this->disabled,
+            $this->options,
+        ) = unserialize($serialized);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function postUnserialize(FormFactoryInterface $factory, FormRegistryInterface $registry)
+    {
+        $this->type = $registry->getType($this->serializedTypeName);
+        $this->serializedTypeName = null;
     }
 }

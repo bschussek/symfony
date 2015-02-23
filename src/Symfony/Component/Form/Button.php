@@ -13,13 +13,14 @@ namespace Symfony\Component\Form;
 
 use Symfony\Component\Form\Exception\AlreadySubmittedException;
 use Symfony\Component\Form\Exception\BadMethodCallException;
+use Symfony\Component\Form\Serializer\SerializableConfigInterface;
 
 /**
  * A form button.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class Button implements \IteratorAggregate, FormInterface
+class Button implements \IteratorAggregate, \Serializable, FormInterface
 {
     /**
      * @var FormInterface|null
@@ -433,5 +434,29 @@ class Button implements \IteratorAggregate, FormInterface
     public function getIterator()
     {
         return new \EmptyIterator();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function serialize()
+    {
+        return serialize(array(
+            $this->config,
+            $this->parent,
+            $this->submitted,
+        ));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function unserialize($serialized)
+    {
+        list(
+            $this->config,
+            $this->parent,
+            $this->submitted,
+        ) = unserialize($serialized);
     }
 }

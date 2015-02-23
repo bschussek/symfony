@@ -14,6 +14,9 @@ namespace Symfony\Component\Form\Extension\Validator\Type;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Validator\ViolationMapper\ViolationMapper;
 use Symfony\Component\Form\Extension\Validator\EventListener\ValidationListener;
+use Symfony\Component\Form\FormConfigBuilderInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\Serializer\SerializationListenerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\ValidatorInterface as LegacyValidatorInterface;
 use Symfony\Component\OptionsResolver\Options;
@@ -22,7 +25,7 @@ use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class FormTypeValidatorExtension extends BaseValidatorExtension
+class FormTypeValidatorExtension extends BaseValidatorExtension implements SerializationListenerInterface
 {
     /**
      * @var ValidatorInterface
@@ -79,6 +82,14 @@ class FormTypeValidatorExtension extends BaseValidatorExtension
         $resolver->setNormalizers(array(
             'constraints' => $constraintsNormalizer,
         ));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function postUnserialize(FormConfigBuilderInterface $config)
+    {
+        $config->addEventSubscriber(new ValidationListener($this->validator, $this->violationMapper));
     }
 
     /**

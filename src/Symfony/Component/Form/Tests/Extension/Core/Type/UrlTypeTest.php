@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
+use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\Form\Test\TypeTestCase as TestCase;
 
 class UrlTypeTest extends TestCase
@@ -81,5 +82,15 @@ class UrlTypeTest extends TestCase
         $this->factory->create('url', null, array(
             'default_protocol' => array(),
         ));
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('url');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

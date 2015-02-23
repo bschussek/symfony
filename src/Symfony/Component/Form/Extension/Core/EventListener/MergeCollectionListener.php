@@ -15,11 +15,12 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\Exception\UnexpectedTypeException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class MergeCollectionListener implements EventSubscriberInterface
+class MergeCollectionListener implements EventSubscriberInterface, SerializableInterface
 {
     /**
      * Whether elements may be added to the collection.

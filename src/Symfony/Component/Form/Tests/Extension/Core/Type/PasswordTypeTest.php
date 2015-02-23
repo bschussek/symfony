@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
+use Symfony\Component\Form\Serializer\FormSerializer;
+
 class PasswordTypeTest extends \Symfony\Component\Form\Test\TypeTestCase
 {
     public function testEmptyIfNotSubmitted()
@@ -47,5 +49,15 @@ class PasswordTypeTest extends \Symfony\Component\Form\Test\TypeTestCase
         $data = $form->getData();
 
         $this->assertSame(' pAs5w0rd ', $data);
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('password');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

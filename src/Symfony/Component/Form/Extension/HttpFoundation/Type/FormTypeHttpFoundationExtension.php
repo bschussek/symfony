@@ -13,6 +13,9 @@ namespace Symfony\Component\Form\Extension\HttpFoundation\Type;
 
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\Extension\HttpFoundation\EventListener\BindRequestListener;
+use Symfony\Component\Form\FormConfigBuilderInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\Serializer\SerializationListenerInterface;
 use Symfony\Component\Form\RequestHandlerInterface;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationRequestHandler;
@@ -20,7 +23,7 @@ use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationRequestHandler
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class FormTypeHttpFoundationExtension extends AbstractTypeExtension
+class FormTypeHttpFoundationExtension extends AbstractTypeExtension implements SerializationListenerInterface
 {
     /**
      * @var BindRequestListener
@@ -48,6 +51,15 @@ class FormTypeHttpFoundationExtension extends AbstractTypeExtension
     {
         $builder->addEventSubscriber($this->listener);
         $builder->setRequestHandler($this->requestHandler);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function postUnserialize(FormConfigBuilderInterface $config)
+    {
+        $config->addEventSubscriber($this->listener);
+        $config->setRequestHandler($this->requestHandler);
     }
 
     /**

@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\Form;
 
+use Symfony\Component\Form\Serializer\SerializableInterface;
+
 /**
  * Reverses a transformer.
  *
@@ -19,7 +21,7 @@ namespace Symfony\Component\Form;
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class ReversedTransformer implements DataTransformerInterface
+class ReversedTransformer implements DataTransformerInterface, SerializableInterface
 {
     /**
      * The reversed transformer.

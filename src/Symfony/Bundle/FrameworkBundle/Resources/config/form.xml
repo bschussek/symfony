@@ -8,6 +8,7 @@
         <parameter key="form.resolved_type_factory.class">Symfony\Component\Form\ResolvedFormTypeFactory</parameter>
         <parameter key="form.registry.class">Symfony\Component\Form\FormRegistry</parameter>
         <parameter key="form.factory.class">Symfony\Component\Form\FormFactory</parameter>
+        <parameter key="form.serializer.class">Symfony\Component\Form\Serializer\FormSerializer</parameter>
         <parameter key="form.extension.class">Symfony\Component\Form\Extension\DependencyInjection\DependencyInjectionExtension</parameter>
         <parameter key="form.type_guesser.validator.class">Symfony\Component\Form\Extension\Validator\ValidatorTypeGuesser</parameter>
         <parameter key="form.type_extension.form.request_handler.class">Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationRequestHandler</parameter>
@@ -35,6 +36,12 @@
         <service id="form.factory" class="%form.factory.class%">
             <argument type="service" id="form.registry" />
             <argument type="service" id="form.resolved_type_factory" />
+        </service>
+
+        <!-- FormSerializer -->
+        <service id="form.serializer" class="%form.serializer.class%">
+            <argument type="service" id="form.factory" />
+            <argument type="service" id="form.registry" />
         </service>
 
         <!-- DependencyInjectionExtension -->

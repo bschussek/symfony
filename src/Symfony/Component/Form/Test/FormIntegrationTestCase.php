@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Form\Test;
 
+use Symfony\Component\Form\FormRegistryInterface;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\Form\FormFactoryInterface;
 
@@ -24,11 +25,17 @@ abstract class FormIntegrationTestCase extends \PHPUnit_Framework_TestCase
      */
     protected $factory;
 
+    /**
+     * @var FormRegistryInterface
+     */
+    protected $registry;
+
     protected function setUp()
     {
         $this->factory = Forms::createFormFactoryBuilder()
             ->addExtensions($this->getExtensions())
             ->getFormFactory();
+        $this->registry = $this->factory->getRegistry();
     }
 
     protected function getExtensions()

@@ -14,13 +14,14 @@ namespace Symfony\Component\Form\Extension\Core\EventListener;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Trims string data.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class TrimListener implements EventSubscriberInterface
+class TrimListener implements EventSubscriberInterface, SerializableInterface
 {
     public function preSubmit(FormEvent $event)
     {

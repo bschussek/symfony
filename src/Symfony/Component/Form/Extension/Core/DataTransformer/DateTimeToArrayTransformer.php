@@ -13,6 +13,7 @@ namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
 use Symfony\Component\Form\Exception\TransformationFailedException;
 use Symfony\Component\Form\Exception\UnexpectedTypeException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Transforms between a normalized time and a localized time string/array.
@@ -20,7 +21,7 @@ use Symfony\Component\Form\Exception\UnexpectedTypeException;
  * @author Bernhard Schussek <bschussek@gmail.com>
  * @author Florian Eckerstorfer <florian@eckerstorfer.org>
  */
-class DateTimeToArrayTransformer extends BaseDateTimeTransformer
+class DateTimeToArrayTransformer extends BaseDateTimeTransformer implements SerializableInterface
 {
     private $pad;
 

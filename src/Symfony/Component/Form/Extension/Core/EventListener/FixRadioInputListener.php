@@ -15,6 +15,7 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceListInterface;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Takes care of converting the input from a single radio button
@@ -22,7 +23,7 @@ use Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceListInterface;
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class FixRadioInputListener implements EventSubscriberInterface
+class FixRadioInputListener implements EventSubscriberInterface, SerializableInterface
 {
     private $choiceList;
 

@@ -13,11 +13,12 @@ namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class ValueToDuplicatesTransformer implements DataTransformerInterface
+class ValueToDuplicatesTransformer implements DataTransformerInterface, SerializableInterface
 {
     private $keys;
 

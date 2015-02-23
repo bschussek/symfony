@@ -12,7 +12,12 @@
 namespace Symfony\Component\Form\Extension\Core\Type;
 
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormConfigBuilderInterface;
+use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\Serializer\SerializableConfigInterface;
+use Symfony\Component\Form\Serializer\SerializableInterface;
+use Symfony\Component\Form\Serializer\SerializationListenerInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\Form\Extension\Core\EventListener\TrimListener;
 use Symfony\Component\Form\Extension\Core\DataMapper\PropertyPathMapper;
@@ -22,16 +27,33 @@ use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 
-class FormType extends BaseType
+class FormType extends BaseType implements SerializationListenerInterface
 {
     /**
      * @var PropertyAccessorInterface
      */
     private $propertyAccessor;
 
+    /**
+     * @var TrimListener
+     */
+    private $trimListener;
+
+    public static function getEmptyData(FormInterface $form)
+    {
+        $class = $form->getConfig()->getOption('data_class');
+
+        if (null !== $class) {
+            return $form->isEmpty() && !$form->isRequired() ? null : new $class();
+        }
+
+        return $form->getConfig()->getCompound() ? array() : '';
+    }
+
     public function __construct(PropertyAccessorInterface $propertyAccessor = null)
     {
         $this->propertyAccessor = $propertyAccessor ?: PropertyAccess::createPropertyAccessor();
+        $this->trimListener = new TrimListener();
     }
 
     /**
@@ -59,7 +81,7 @@ class FormType extends BaseType
             ->setAction($options['action']);
 
         if ($options['trim']) {
-            $builder->addEventSubscriber(new TrimListener());
+            $builder->addEventSubscriber($this->trimListener);
         }
     }
 
@@ -122,8 +144,20 @@ class FormType extends BaseType
     /**
      * {@inheritdoc}
      */
+    public function postUnserialize(FormConfigBuilderInterface $config)
+    {
+        if ($config->getOption('compound')) {
+            $config->setDataMapper(new PropertyPathMapper($this->propertyAccessor));
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function setDefaultOptions(OptionsResolverInterface $resolver)
     {
+        $class = __CLASS__;
+
         parent::setDefaultOptions($resolver);
 
         // Derive "data_class" option from passed "data" object
@@ -132,18 +166,8 @@ class FormType extends BaseType
         };
 
         // Derive "empty_data" closure from "data_class" option
-        $emptyData = function (Options $options) {
-            $class = $options['data_class'];
-
-            if (null !== $class) {
-                return function (FormInterface $form) use ($class) {
-                    return $form->isEmpty() && !$form->isRequired() ? null : new $class();
-                };
-            }
-
-            return function (FormInterface $form) {
-                return $form->getConfig()->getCompound() ? array() : '';
-            };
+        $emptyData = function (Options $options) use ($class) {
+            return array($class, 'getEmptyData');
         };
 
         // For any form that is not represented by a single HTML control,

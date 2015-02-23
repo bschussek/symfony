@@ -12,11 +12,12 @@
 namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
 use Symfony\Component\Form\Exception\TransformationFailedException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class DateTimeToRfc3339Transformer extends BaseDateTimeTransformer
+class DateTimeToRfc3339Transformer extends BaseDateTimeTransformer implements SerializableInterface
 {
     /**
      * {@inheritdoc}

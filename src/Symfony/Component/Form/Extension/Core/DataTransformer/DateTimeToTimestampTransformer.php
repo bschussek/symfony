@@ -12,6 +12,7 @@
 namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
 use Symfony\Component\Form\Exception\TransformationFailedException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Transforms between a timestamp and a DateTime object.
@@ -19,7 +20,7 @@ use Symfony\Component\Form\Exception\TransformationFailedException;
  * @author Bernhard Schussek <bschussek@gmail.com>
  * @author Florian Eckerstorfer <florian@eckerstorfer.org>
  */
-class DateTimeToTimestampTransformer extends BaseDateTimeTransformer
+class DateTimeToTimestampTransformer extends BaseDateTimeTransformer implements SerializableInterface
 {
     /**
      * Transforms a DateTime object into a timestamp in the configured timezone.

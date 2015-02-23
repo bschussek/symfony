@@ -17,6 +17,7 @@ use Symfony\Component\Form\Exception\AlreadySubmittedException;
 use Symfony\Component\Form\Exception\TransformationFailedException;
 use Symfony\Component\Form\Exception\LogicException;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
+use Symfony\Component\Form\Serializer\SerializableConfigInterface;
 use Symfony\Component\Form\Util\FormUtil;
 use Symfony\Component\Form\Util\InheritDataAwareIterator;
 use Symfony\Component\Form\Util\OrderedHashMap;
@@ -58,7 +59,7 @@ use Symfony\Component\PropertyAccess\PropertyPath;
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class Form implements \IteratorAggregate, FormInterface
+class Form implements \IteratorAggregate, \Serializable, FormInterface
 {
     /**
      * The form's configuration.
@@ -609,7 +610,7 @@ class Form implements \IteratorAggregate, FormInterface
                 if (FormUtil::isEmpty($viewData)) {
                     $emptyData = $this->config->getEmptyData();
 
-                    if ($emptyData instanceof \Closure) {
+                    if ($emptyData instanceof \Closure || is_array($emptyData) && is_callable($emptyData)) {
                         /* @var \Closure $emptyData */
                         $emptyData = $emptyData($this, $viewData);
                     }
@@ -1058,6 +1059,50 @@ class Form implements \IteratorAggregate, FormInterface
         $type->finishView($view, $this, $options);
 
         return $view;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function serialize()
+    {
+        return serialize(array(
+            $this->config,
+            $this->parent,
+            $this->children,
+            $this->errors,
+            $this->submitted,
+            $this->clickedButton,
+            $this->modelData,
+            $this->normData,
+            $this->viewData,
+            $this->extraData,
+            $this->synchronized,
+            $this->defaultDataSet,
+            $this->lockSetData,
+        ));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function unserialize($serialized)
+    {
+        list(
+            $this->config,
+            $this->parent,
+            $this->children,
+            $this->errors,
+            $this->submitted,
+            $this->clickedButton,
+            $this->modelData,
+            $this->normData,
+            $this->viewData,
+            $this->extraData,
+            $this->synchronized,
+            $this->defaultDataSet,
+            $this->lockSetData,
+        ) = unserialize($serialized);
     }
 
     /**

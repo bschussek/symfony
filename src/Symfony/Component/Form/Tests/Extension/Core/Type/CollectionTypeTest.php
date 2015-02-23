@@ -12,6 +12,7 @@
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
 use Symfony\Component\Form\Form;
+use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\Form\Tests\Fixtures\Author;
 use Symfony\Component\Form\Tests\Fixtures\AuthorType;
 
@@ -273,5 +274,17 @@ class CollectionTypeTest extends \Symfony\Component\Form\Test\TypeTestCase
         ));
 
         $this->assertSame('__test__label__', $form->createView()->vars['prototype']->vars['label']);
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('collection', array('a', 'b'), array(
+            'type' => 'text',
+        ));
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

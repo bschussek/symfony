@@ -1,4 +1,5 @@
 <?php
+
 /*
  * This file is part of the Symfony package.
  *
@@ -8,31 +9,22 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Form\Tests\Extension\DataCollector\Type;
+namespace Extension\HttpFoundation\Type;
 
-use Symfony\Component\Form\Extension\DataCollector\DataCollectorExtension;
-use Symfony\Component\Form\Extension\DataCollector\FormDataCollectorInterface;
+use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationExtension;
 use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\Form\Test\TypeTestCase;
 
-class DataCollectorTypeExtensionTest extends TypeTestCase
+/**
+ * @since  1.0
+ * @author Bernhard Schussek <bschussek@gmail.com>
+ */
+class FormTypeHttpFoundationExtensionTest extends TypeTestCase
 {
-    /**
-     * @var \PHPUnit_Framework_MockObject_MockObject|FormDataCollectorInterface
-     */
-    private $dataCollector;
-
-    public function setUp()
-    {
-        $this->dataCollector = $this->getMock('Symfony\Component\Form\Extension\DataCollector\FormDataCollectorInterface');
-
-        parent::setUp();
-    }
-
     protected function getExtensions()
     {
         return array_merge(parent::getExtensions(), [
-            new DataCollectorExtension($this->dataCollector),
+            new HttpFoundationExtension(),
         ]);
     }
 

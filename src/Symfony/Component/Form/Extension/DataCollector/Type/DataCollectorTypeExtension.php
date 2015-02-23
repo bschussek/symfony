@@ -11,10 +11,14 @@
 
 namespace Symfony\Component\Form\Extension\DataCollector\Type;
 
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\Extension\DataCollector\EventListener\DataCollectorListener;
 use Symfony\Component\Form\Extension\DataCollector\FormDataCollectorInterface;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormConfigBuilderInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\Serializer\SerializationListenerInterface;
 
 /**
  * Type extension for collecting data of a form with this type.
@@ -23,10 +27,10 @@ use Symfony\Component\Form\FormBuilderInterface;
  * @author Robert Schönthal <robert.schoenthal@gmail.com>
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class DataCollectorTypeExtension extends AbstractTypeExtension
+class DataCollectorTypeExtension extends AbstractTypeExtension implements SerializationListenerInterface
 {
     /**
-     * @var \Symfony\Component\EventDispatcher\EventSubscriberInterface
+     * @var EventSubscriberInterface
      */
     private $listener;
 
@@ -41,6 +45,14 @@ class DataCollectorTypeExtension extends AbstractTypeExtension
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder->addEventSubscriber($this->listener);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function postUnserialize(FormConfigBuilderInterface $config)
+    {
+        $config->addEventSubscriber($this->listener);
     }
 
     /**

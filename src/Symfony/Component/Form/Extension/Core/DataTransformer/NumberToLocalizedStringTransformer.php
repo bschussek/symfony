@@ -13,6 +13,7 @@ namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Transforms between a number type and a localized number with grouping
@@ -21,7 +22,7 @@ use Symfony\Component\Form\Exception\TransformationFailedException;
  * @author Bernhard Schussek <bschussek@gmail.com>
  * @author Florian Eckerstorfer <florian@eckerstorfer.org>
  */
-class NumberToLocalizedStringTransformer implements DataTransformerInterface
+class NumberToLocalizedStringTransformer implements DataTransformerInterface, SerializableInterface
 {
     /**
      * Rounds a number towards positive infinity.

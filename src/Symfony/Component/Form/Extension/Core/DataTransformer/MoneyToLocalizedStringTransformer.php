@@ -12,6 +12,7 @@
 namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
 use Symfony\Component\Form\Exception\TransformationFailedException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Transforms between a normalized format and a localized money string.
@@ -19,7 +20,7 @@ use Symfony\Component\Form\Exception\TransformationFailedException;
  * @author Bernhard Schussek <bschussek@gmail.com>
  * @author Florian Eckerstorfer <florian@eckerstorfer.org>
  */
-class MoneyToLocalizedStringTransformer extends NumberToLocalizedStringTransformer
+class MoneyToLocalizedStringTransformer extends NumberToLocalizedStringTransformer implements SerializableInterface
 {
     private $divisor;
 

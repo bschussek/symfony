@@ -11,10 +11,13 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
+use Symfony\Component\Form\Serializer\FormSerializer;
+use Symfony\Component\Form\Test\TypeTestCase;
+
 /**
  * @author Stepan Anchugov <kixxx1@gmail.com>
  */
-class BirthdayTypeTest extends BaseTypeTest
+class BirthdayTypeTest extends TypeTestCase
 {
     /**
      * @expectedException \Symfony\Component\OptionsResolver\Exception\InvalidOptionsException
@@ -24,6 +27,16 @@ class BirthdayTypeTest extends BaseTypeTest
         $this->factory->create('birthday', null, array(
             'years' => 'bad value',
         ));
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('birthday');
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 
     protected function getTestedType()

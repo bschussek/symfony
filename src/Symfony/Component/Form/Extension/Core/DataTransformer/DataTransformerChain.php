@@ -13,13 +13,14 @@ namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Passes a value through multiple value transformers.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class DataTransformerChain implements DataTransformerInterface
+class DataTransformerChain implements DataTransformerInterface, SerializableInterface
 {
     /**
      * The value transformers.

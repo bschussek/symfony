@@ -13,6 +13,7 @@ namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
 use Symfony\Component\Form\Exception\TransformationFailedException;
 use Symfony\Component\Form\Exception\UnexpectedTypeException;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Transforms between a date string and a DateTime object.
@@ -20,7 +21,7 @@ use Symfony\Component\Form\Exception\UnexpectedTypeException;
  * @author Bernhard Schussek <bschussek@gmail.com>
  * @author Florian Eckerstorfer <florian@eckerstorfer.org>
  */
-class DateTimeToStringTransformer extends BaseDateTimeTransformer
+class DateTimeToStringTransformer extends BaseDateTimeTransformer implements SerializableInterface
 {
     /**
      * Format used for generating strings.

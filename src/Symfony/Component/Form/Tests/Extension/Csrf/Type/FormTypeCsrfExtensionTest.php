@@ -14,6 +14,7 @@ namespace Symfony\Component\Form\Tests\Extension\Csrf\Type;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\Serializer\FormSerializer;
 use Symfony\Component\Form\Test\TypeTestCase;
 use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
 use Symfony\Component\Security\Csrf\CsrfToken;
@@ -396,5 +397,17 @@ class FormTypeCsrfExtensionTest extends TypeTestCase
 
         $this->assertGreaterThan(0, count($errors));
         $this->assertEquals(new FormError('[trans]Foobar[/trans]'), $errors[0]);
+    }
+
+    public function testSerialize()
+    {
+        $serializer = new FormSerializer($this->factory, $this->registry);
+        $form = $this->factory->create('form', null, array(
+            'compound' => true,
+        ));
+
+        $unserialized = $serializer->unserialize($serializer->serialize($form));
+
+        $this->assertEquals($form, $unserialized);
     }
 }

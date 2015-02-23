@@ -14,13 +14,14 @@ namespace Symfony\Component\Form\Extension\Core\EventListener;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Form\Serializer\SerializableInterface;
 
 /**
  * Adds a protocol to a URL if it doesn't already have one.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class FixUrlProtocolListener implements EventSubscriberInterface
+class FixUrlProtocolListener implements EventSubscriberInterface, SerializableInterface
 {
     private $defaultProtocol;
 

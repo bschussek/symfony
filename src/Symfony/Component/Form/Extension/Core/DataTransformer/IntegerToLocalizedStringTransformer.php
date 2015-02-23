@@ -11,13 +11,15 @@
 
 namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
+use Symfony\Component\Form\Serializer\SerializableInterface;
+
 /**
  * Transforms between an integer and a localized number with grouping
  * (each thousand) and comma separators.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
-class IntegerToLocalizedStringTransformer extends NumberToLocalizedStringTransformer
+class IntegerToLocalizedStringTransformer extends NumberToLocalizedStringTransformer implements SerializableInterface
 {
     /**
      * Constructs a transformer.
